@@ -120,15 +120,41 @@ def bajar(_):
     print(f"{len(lista)} en la bandeja, {nuevas} descargada(s) ahora → {PENDIENTES}")
 
 
+def _limpiar_mascara(alfa):
+    """Deja solo la prenda: quita trozos sueltos (un pie, la esquina de la
+    colcha) y rellena los agujeros de dentro (un estampado que el modelo
+    confundió con fondo). Se queda con la pieza grande y con las que midan al
+    menos un 15 % de ella (p. ej. las dos mitades de un pantalón separadas)."""
+    import numpy as np
+    from PIL import Image
+    from scipy import ndimage
+    a = np.asarray(alfa)
+    solido = a > 127
+    etiquetas, n = ndimage.label(solido)
+    if n == 0:
+        return alfa
+    tamanos = ndimage.sum(solido, etiquetas, range(1, n + 1))
+    quedan = [i + 1 for i, t in enumerate(tamanos) if t >= 0.15 * tamanos.max()]
+    pieza = np.isin(etiquetas, quedan)
+    llena = ndimage.binary_fill_holes(pieza)
+    # Borde suave: se conserva el alfa original cerca de la pieza.
+    cerca = ndimage.binary_dilation(llena, iterations=3)
+    salida = np.where(llena, 255, np.where(cerca, a, 0)).astype("uint8")
+    return Image.fromarray(salida, "L")
+
+
 def _recortar_una(sesion, original, destino):
     from PIL import Image
     from rembg import remove
     with Image.open(original) as im:
         im = im.convert("RGB")
-        sin_fondo = remove(im, session=sesion, post_process_mask=True)
-    alfa = sin_fondo.getchannel("A")
+    # El color sale siempre de la foto original: rembg deja en negro lo que
+    # descarta, y al rellenar agujeros se verían manchas negras.
+        mascara = remove(im, session=sesion, only_mask=True, post_process_mask=True)
+        sin_fondo = im.convert("RGBA")
+    sin_fondo.putalpha(_limpiar_mascara(mascara))
     # Restos sueltos casi transparentes que agrandarían el recuadro: fuera.
-    caja = alfa.point(lambda v: 255 if v > 24 else 0).getbbox()
+    caja = sin_fondo.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
     if caja:
         margen = int(max(caja[2] - caja[0], caja[3] - caja[1]) * 0.04)
         caja = (max(0, caja[0] - margen), max(0, caja[1] - margen),
@@ -149,10 +175,11 @@ def recortar(args):
     vistas = []
     for c in carpetas:
         recorte = c / "recorte.png"
-        if not recorte.exists() or args.rehacer:
+        rehacer = args.rehacer or (args.solo and c.name in args.solo.split(","))
+        if not recorte.exists() or rehacer:
             if sesion is None:
-                print(f"Cargando el modelo {MODELO} (la primera vez se descarga)…", flush=True)
-                sesion = new_session(MODELO)
+                print(f"Cargando el modelo {args.modelo} (la primera vez se descarga)…", flush=True)
+                sesion = new_session(args.modelo)
             print(f"  recortando {c.name}…", flush=True)
             _recortar_una(sesion, c / "original.jpg", recorte)
         vistas.append(c)
@@ -310,6 +337,8 @@ def principal():
     s.add_parser("bajar").set_defaults(f=bajar)
     r = s.add_parser("recortar")
     r.add_argument("--rehacer", action="store_true", help="volver a recortar aunque ya esté")
+    r.add_argument("--solo", help="solo estas prendas, p. ej. 20,22 (implica --rehacer)")
+    r.add_argument("--modelo", default=MODELO, help="modelo de rembg; birefnet-general-lite va mejor con prendas claras sobre fondo claro")
     r.set_defaults(f=recortar)
     r = s.add_parser("subir")
     r.add_argument("fichero")
