@@ -33,13 +33,13 @@
     </label>
     <label class="boton disparo">
       <input type="file" accept="image/*" multiple id="galeria">
-      <i>🖼️</i> De la galería
+      <i>🖼️</i> Varias de la galería
     </label>
   </div>
 
   <ul class="tanda" id="tanda" aria-live="polite"></ul>
   <p class="explica vacio-tanda" id="vacio-tanda">
-    {% if ya %}Ya tienes {{ ya|length }} aquí. Las nuevas aparecerán abajo según las hagas.{% else %}Las fotos aparecerán aquí según las hagas. Puedes hacer todas las que quieras seguidas.{% endif %}
+    {% if ya %}Ya tienes {{ ya|length }} aquí. Las nuevas aparecerán abajo según las hagas.{% else %}Las fotos aparecerán aquí según las hagas. Puedes hacer todas las que quieras seguidas, o elegir muchas de la galería de golpe.{% endif %}
   </p>
 
   {% if ya %}

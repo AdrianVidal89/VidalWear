@@ -17,41 +17,79 @@
   var seguir = document.getElementById('seguir');
   var nombreOtros = document.getElementById('nombre-otros');
 
-  var cola = [], activas = 0, pendientes = 0, subidas = 0;
+  var cola = [], activas = 0, pendientes = 0, subidas = 0, total = 0;
 
   function actualizarBoton() {
     if (!seguir) return;
-    if (pendientes > 0) seguir.textContent = 'Subiendo ' + pendientes + '…';
+    if (pendientes > 0) seguir.textContent = 'Subiendo… faltan ' + pendientes;
     else seguir.textContent = subidas > 0 ? seguir.dataset.con : seguir.dataset.sin;
   }
 
   // ------------------------------------------------------------ compresión
   // Se dibuja con un <img>: los navegadores actuales ya enderezan la foto
   // según su EXIF al pintarla, así que el canvas sale derecho.
+  //
+  // Las fotos se comprimen DE UNA EN UNA aunque se elijan 20 de golpe: una
+  // foto de iPhone abierta ocupa ~50 MB de memoria y Safari recarga la página
+  // si se abren muchas a la vez. La vista previa es una miniatura pequeña,
+  // nunca la foto original.
+  var MINI = 320;
   function cargar(fichero) {
     return new Promise(function (ok, mal) {
       var url = URL.createObjectURL(fichero);
       var img = new Image();
-      img.onload = function () { ok({ img: img, url: url }); };
+      img.onload = function () { URL.revokeObjectURL(url); ok(img); };
       img.onerror = function () { URL.revokeObjectURL(url); mal(new Error('no se puede leer')); };
       img.src = url;
     });
   }
 
+  function aBlob(img, lado, calidad) {
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var k = Math.min(1, lado / Math.max(w, h));
+    var c = document.createElement('canvas');
+    c.width = Math.round(w * k);
+    c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return new Promise(function (ok) {
+      c.toBlob(function (blob) {
+        c.width = c.height = 0;  // suelta la memoria del canvas ya (iOS es tacaño)
+        ok(blob);
+      }, 'image/jpeg', calidad);
+    });
+  }
+
   function comprimir(fichero) {
-    return cargar(fichero).then(function (r) {
-      var w = r.img.naturalWidth, h = r.img.naturalHeight;
-      var k = Math.min(1, LADO / Math.max(w, h));
-      var c = document.createElement('canvas');
-      c.width = Math.round(w * k);
-      c.height = Math.round(h * k);
-      c.getContext('2d').drawImage(r.img, 0, 0, c.width, c.height);
-      return new Promise(function (ok) {
-        c.toBlob(function (blob) {
-          c.width = c.height = 0;  // suelta la memoria del canvas ya (iOS es tacaño)
-          ok({ blob: blob, vista: r.url });
-        }, 'image/jpeg', CALIDAD);
+    return cargar(fichero).then(function (img) {
+      return aBlob(img, LADO, CALIDAD).then(function (blob) {
+        return aBlob(img, MINI, 0.7).then(function (mini) {
+          img.src = '';
+          if (!blob) throw new Error('sin memoria');
+          return { blob: blob, vista: mini ? URL.createObjectURL(mini) : '' };
+        });
       });
+    });
+  }
+
+  var porComprimir = [], comprimiendo = false;
+  function comprimirSiguiente() {
+    if (comprimiendo || !porComprimir.length) return;
+    comprimiendo = true;
+    var t = porComprimir.shift();
+    t.li.querySelector('.sello').textContent = '⋯';
+    comprimir(t.fichero).then(function (r) {
+      if (r.vista) t.li.querySelector('img').src = r.vista;
+      return r.blob;
+    }).catch(function () {
+      // El navegador no sabe abrirla (p. ej. HEIC en un ordenador): se manda
+      // tal cual y que la convierta el servidor.
+      return t.fichero;
+    }).then(function (blob) {
+      cola.push({ li: t.li, blob: blob });
+      siguiente();
+      comprimiendo = false;
+      // Un respiro entre foto y foto para que el móvil libere memoria.
+      setTimeout(comprimirSiguiente, 30);
     });
   }
 
@@ -60,7 +98,7 @@
     var li = document.createElement('li');
     li.className = 'ficha-subida subiendo';
     li.innerHTML =
-      '<div class="marco"><img alt=""><span class="sello">…</span></div>' +
+      '<div class="marco"><img alt=""><span class="sello">⏳</span></div>' +
       '<div class="progreso"><i style="transform: scaleX(0)"></i></div>' +
       '<input type="text" maxlength="80" placeholder="' +
       (esOtros ? '¿Qué es?' : 'Nombre (opcional)') + '" aria-label="Nombre de la prenda">';
@@ -92,19 +130,11 @@
   function encolar(fichero) {
     var li = nuevaFicha();
     pendientes++;
+    total++;
     actualizarBoton();
     li.querySelector('input').addEventListener('change', function () { guardarNombre(li); });
-    comprimir(fichero).then(function (r) {
-      li.querySelector('img').src = r.vista;
-      return r.blob;
-    }).catch(function () {
-      // El navegador no sabe abrirla (p. ej. HEIC en un ordenador): se manda
-      // tal cual y que la convierta el servidor.
-      return fichero;
-    }).then(function (blob) {
-      cola.push({ li: li, blob: blob });
-      siguiente();
-    });
+    porComprimir.push({ li: li, fichero: fichero });
+    comprimirSiguiente();
   }
 
   function siguiente() {
@@ -163,11 +193,13 @@
     pendientes--;
     actualizarBoton();
     siguiente();
+    if (pendientes === 0) total = 0;
     if (pendientes === 0 && esperando) { var d = esperando; esperando = null; location.href = d; }
   }
 
   function alElegir(e) {
-    Array.prototype.forEach.call(e.target.files, encolar);
+    var ficheros = Array.prototype.slice.call(e.target.files);
+    ficheros.forEach(encolar);
     e.target.value = '';  // que se pueda volver a elegir la misma foto
   }
   document.getElementById('camara').addEventListener('change', alElegir);
