@@ -9,6 +9,10 @@ services:
     restart: unless-stopped
     # adrian es 1000 y su grupo en QTS es `everyone` (100).
     user: "${USUARIO:-1000:100}"
+    # La red estándar de Docker, no una propia: el 26-oct-2026 Container
+    # Station falló al crear «vidalwear_default» (dnsmasq add fail) y el
+    # contenedor no llegó a arrancar. Un solo contenedor no necesita red propia.
+    network_mode: bridge
     ports:
       - "${PUERTO:-8085}:8085"
     environment:
