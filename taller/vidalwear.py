@@ -99,6 +99,13 @@ def bajar(_):
     lista = pedir("/api/taller/bandeja")
     gente = usuarios()
     PENDIENTES.mkdir(parents=True, exist_ok=True)
+    # Lo descargado que ya no está en la bandeja (se borró desde el móvil
+    # antes de procesarlo) se tira: subirlo daría error.
+    vivas = {str(p["id"]) for p in lista}
+    for c in PENDIENTES.iterdir():
+        if c.is_dir() and c.name not in vivas:
+            shutil.rmtree(c)
+            print(f"  #{c.name} ya no está en la bandeja: descartada")
     nuevas = 0
     for p in lista:
         carpeta = PENDIENTES / str(p["id"])

@@ -259,7 +259,8 @@ def foto(pid, tipo):
     if not ruta.exists():
         abort(404)
     # Las URLs llevan ?v=<fecha de procesado>: se pueden cachear sin miedo.
-    return send_file(ruta, max_age=60 * 60 * 24 * 30)
+    tipo_mime = "image/webp" if ruta.suffix == ".webp" else "image/jpeg"
+    return send_file(ruta, mimetype=tipo_mime, max_age=60 * 60 * 24 * 30)
 
 
 # ---------------------------------------------------------------- CONJUNTOS

@@ -17,7 +17,7 @@ from flask import current_app, g
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS usuarios (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
     genero TEXT NOT NULL CHECK (genero IN ('hombre', 'mujer')),
     bienvenida_hecha INTEGER NOT NULL DEFAULT 0,
@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 CREATE TABLE IF NOT EXISTS prendas (
-    id INTEGER PRIMARY KEY,
+    -- AUTOINCREMENT: un número de prenda no se reutiliza nunca, ni tras
+    -- borrarla. El taller y el inventario del vault se fían de ese número.
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     categoria TEXT NOT NULL,
     nombre TEXT NOT NULL DEFAULT '',
@@ -39,7 +41,7 @@ CREATE TABLE IF NOT EXISTS prendas (
 CREATE INDEX IF NOT EXISTS prendas_por_usuario ON prendas(usuario_id, estado);
 
 CREATE TABLE IF NOT EXISTS conjuntos (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     titulo TEXT NOT NULL,
     explicacion TEXT NOT NULL DEFAULT '',
