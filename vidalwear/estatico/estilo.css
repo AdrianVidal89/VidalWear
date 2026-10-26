@@ -1,0 +1,689 @@
+/* ============================================================================
+   Aspecto Adrian — hoja base común a todas las apps.
+   Copiar entera al proyecto y añadir debajo solo lo propio de la app.
+   Lo único que se cambia arriba es el bloque MARCA (el acento).
+   Base neutra, color solo en los acentos. Oscuro o claro según el sistema.
+   ============================================================================ */
+
+/* ------------------------------------------------------------------- MARCA
+   Lo único que cambia de una app a otra. Sustituir por el acento de la app
+   (tabla de acentos en la skill). --sobre-acento tiene que contrastar con
+   --acento: casi negro para acentos claros, casi blanco para los oscuros. */
+:root {
+  /* VidalWear: terracota, el color del cuero teñido y de la sastrería. */
+  --acento: #e0805a;
+  --acento-apagado: #8a5543;
+  --sobre-acento: #1d0b05;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="oscuro"]) { --acento: #a8492a; --sobre-acento: #ffffff; }
+}
+:root[data-tema="claro"] { --acento: #a8492a; --sobre-acento: #ffffff; }
+
+/* ------------------------------------------------------------------ TOKENS */
+:root {
+  /* Base neutra oscura: gris pizarra, admite cualquier acento sin pelearse. */
+  --fondo: #111315;
+  --panel: #191c1f;
+  --panel-alto: #22262a;
+  --borde: #2e3338;
+  --borde-fuerte: #3d444b;
+  --texto: #e6e8ea;
+  --suave: #9aa3ab;
+  --tinta: #0a0c0d;
+  --acento-flojo: #26231b;
+
+  /* Semánticos: iguales en TODAS las apps. Un error se ve igual en todas. */
+  --ok: #3fae72;
+  --peligro: #e05c4a;
+  --atencion: #e0a93b;
+
+  /* Geometría amplia: aire, tarjetas grandes, todo cómodo con el pulgar. */
+  --radio: 14px;
+  --radio-chico: 10px;
+  --pastilla: 999px;
+  --sombra: 0 10px 30px rgba(0, 0, 0, .35);
+  --ancho: 1240px;
+  --margen: 18px;
+
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  /* MOVIMIENTO. Las curvas de CSS de fábrica son flojas y se notan sin punch.
+     Estas tres son las de Emil Kowalski (Sonner, Vaul) y cubren todo:
+       --salida    todo lo que entra o sale: empieza rápido, responde al instante
+       --dentro    lo que se mueve o se transforma en pantalla, sin entrar ni salir
+       --cajon     paneles deslizantes, la curva de iOS
+     NUNCA ease-in en interfaz: arranca lento y la app parece pesada. */
+  --salida: cubic-bezier(0.23, 1, 0.32, 1);
+  --dentro: cubic-bezier(0.77, 0, 0.175, 1);
+  --cajon: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Duraciones. Por debajo de 300 ms todo lo de interfaz, sin excepción. */
+  --t-pulsar: 140ms;   /* respuesta al pulsar un botón */
+  --t-corto: 180ms;    /* globos de ayuda, menús pequeños */
+  --t-medio: 220ms;    /* desplegables, selectores */
+  --t-largo: 300ms;    /* ventanas y paneles */
+
+  color-scheme: dark;
+}
+
+/* Claro: cuando el sistema lo pide y no se ha forzado lo contrario. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="oscuro"]) {
+    --fondo: #f4f5f6;
+    --panel: #ffffff;
+    --panel-alto: #ebedef;
+    --borde: #dfe2e5;
+    --borde-fuerte: #c6cbd1;
+    --texto: #1b1e21;
+    --suave: #646d75;
+    --tinta: #1b1e21;
+    --acento-flojo: #f3ece0;
+    --ok: #1f7a4d;
+    --peligro: #b23527;
+    --atencion: #9a6b10;
+    --sombra: 0 8px 24px rgba(30, 40, 60, .10);
+    color-scheme: light;
+  }
+}
+
+/* Forzado a mano con el interruptor (data-tema en <html>). Repetido a
+   propósito: así el interruptor gana en los dos sentidos. */
+:root[data-tema="claro"] {
+  --fondo: #f4f5f6;
+  --panel: #ffffff;
+  --panel-alto: #ebedef;
+  --borde: #dfe2e5;
+  --borde-fuerte: #c6cbd1;
+  --texto: #1b1e21;
+  --suave: #646d75;
+  --tinta: #1b1e21;
+  --acento-flojo: #f3ece0;
+  --ok: #1f7a4d;
+  --peligro: #b23527;
+  --atencion: #9a6b10;
+  --sombra: 0 8px 24px rgba(30, 40, 60, .10);
+  color-scheme: light;
+}
+
+/* -------------------------------------------------------------------- BASE */
+* { box-sizing: border-box; }
+html, body {
+  /* Sin esto, al llegar al final de la página el móvil hace el gesto de
+     recargar y se lleva el desplazamiento. En una app instalada no pega. */
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 16px/1.5 var(--fuente);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  /* El destello gris que pinta el móvil al tocar: lo quitamos porque la
+     respuesta al pulsar ya la da el :active de abajo, que es mejor. */
+  -webkit-tap-highlight-color: transparent;
+}
+a { color: inherit; }
+main { max-width: var(--ancho); margin: 0 auto; padding: 22px var(--margen) 60px; }
+h1 { font-size: 1.6rem; margin: .2em 0 .6em; letter-spacing: -.01em; }
+h2 { font-size: 1.2rem; margin: 1.4em 0 .6em; }
+h3 { font-size: 1rem; margin: 1.2em 0 .5em; }
+.seccion { margin-top: 44px; }
+.vacio { color: var(--suave); padding: 30px 0; }
+.explica { color: var(--suave); font-size: .88rem; line-height: 1.55; }
+code {
+  font-family: var(--mono); font-size: .85em; background: var(--panel-alto);
+  padding: .1em .4em; border-radius: 6px;
+}
+pre {
+  background: var(--tinta); color: var(--suave); padding: 12px; border-radius: var(--radio-chico);
+  overflow-x: auto; font-size: .8rem; max-height: 320px;
+}
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- CABECERA */
+.cabecera {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px var(--margen);
+  background: linear-gradient(180deg, var(--panel) 0%, var(--fondo) 100%);
+  border-bottom: 1px solid var(--borde);
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(6px);
+}
+.marca { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+.marca img { border-radius: var(--radio-chico); }
+.marca strong { display: block; font-size: 1.12rem; letter-spacing: -.02em; }
+.marca small { display: block; color: var(--suave); font-size: .72rem; }
+
+.buscador { flex: 1 1 280px; display: flex; gap: 8px; min-width: 220px; max-width: 640px; }
+.buscador input {
+  flex: 1; padding: 9px 14px; border-radius: var(--pastilla);
+  border: 1px solid var(--borde); background: var(--panel-alto);
+  color: var(--texto); font-size: .92rem;
+}
+.buscador input:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+.buscador button { border-radius: var(--pastilla); padding: 0 16px; }
+
+/* El menú: fila de pastillas en pantalla grande, barra de abajo en el móvil. */
+.menu { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.menu a {
+  padding: 7px 12px; border-radius: var(--pastilla); text-decoration: none;
+  color: var(--suave); font-size: .9rem; white-space: nowrap;
+  transition: background var(--t-corto) var(--salida), color var(--t-corto) var(--salida);
+  touch-action: manipulation;
+}
+.menu a.activo { background: var(--acento); color: var(--sobre-acento); font-weight: 600; }
+.menu a i { display: none; }  /* los iconos son para la barra del móvil */
+
+.punto {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--acento); animation: latir 1.4s infinite; vertical-align: middle;
+}
+@keyframes latir { 50% { opacity: .25; } }
+
+/* ------------------------------------------------------------------- HOVER
+   TODO el hover va aquí dentro, sin excepción. El móvil no tiene ratón: si no
+   se encierra, al tocar un botón se le queda el hover pegado hasta que tocas
+   otra cosa, y parece que la app se ha trabado. Las dos condiciones hacen
+   falta: que pueda haber hover y que el puntero sea fino (un ratón de verdad,
+   no un dedo ni un lápiz). */
+@media (hover: hover) and (pointer: fine) {
+  button:hover, .boton:hover { border-color: var(--acento); }
+  .menu a:hover { background: var(--panel-alto); color: var(--texto); }
+  .tarjeta a:hover img { transform: translateY(-3px); }
+  tbody tr:hover { background: var(--panel-alto); }
+  .chip:hover { border-color: var(--borde-fuerte); }
+  .estantes a:hover, .caja a:hover { border-color: var(--acento); }
+}
+
+/* --------------------------------------------------------- MENOS MOVIMIENTO
+   Quien lo pide suele marearse con el movimiento, no con los colores. Así que
+   se quita lo que se desplaza y se deja lo que ayuda a entender (opacidad y
+   color): apagarlo todo a cero deja la interfaz peor, no mejor. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color !important;
+    transition-duration: var(--t-corto) !important;
+  }
+  button:active, .boton:active { transform: none; }
+  .tarjeta a:hover img { transform: none; }
+}
+
+/* ------------------------------------------------------------------ AVISOS */
+.cinta {
+  margin: 0; padding: 8px var(--margen); text-align: center;
+  background: var(--panel-alto); border-bottom: 1px solid var(--acento-apagado);
+  color: var(--suave); font-size: .82rem;
+}
+.cinta a { color: var(--acento); }
+.avisos { max-width: var(--ancho); margin: 12px auto 0; padding: 0 var(--margen); }
+.aviso {
+  margin: 0 0 8px; padding: 10px 14px; border-radius: var(--radio-chico);
+  border: 1px solid var(--borde); background: var(--panel); font-size: .92rem;
+}
+.aviso.ok { border-color: var(--ok); }
+.aviso.error { border-color: var(--peligro); }
+.aviso.atencion { border-color: var(--atencion); }
+
+/* El aviso aparece de golpe y queda brusco. Con @starting-style entra solo,
+   sin una línea de JavaScript. Nunca se entra desde scale(0): en el mundo
+   real nada aparece de la nada, así que se parte de 0.97 y algo de opacidad.
+   Y con transición, no con keyframes: si llegan dos avisos seguidos, la
+   transición se reconduce sola y los keyframes vuelven a empezar de cero. */
+.aviso {
+  transition: opacity var(--t-medio) var(--salida),
+              transform var(--t-medio) var(--salida);
+}
+@starting-style {
+  .aviso { opacity: 0; transform: translateY(-6px) scale(0.97); }
+}
+
+/* ----------------------------------------------------------------- BOTONES */
+button, .boton {
+  font: inherit; font-size: .9rem; padding: 9px 16px; border-radius: var(--pastilla);
+  cursor: pointer; border: 1px solid var(--borde); background: var(--panel-alto);
+  color: var(--texto); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 7px;
+  /* Que el botón se note vivo al pulsarlo, y que el móvil no tarde 300 ms en
+     reaccionar ni seleccione el texto al dejar el dedo apoyado. */
+  transition: transform var(--t-pulsar) var(--salida),
+              border-color var(--t-corto) var(--salida);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* La respuesta al pulsar: hundirse un pelo. Sutil, entre 0.95 y 0.98 —
+   es lo que hace que la interfaz parezca estar escuchando. */
+button:active, .boton:active { transform: scale(0.97); }
+button:disabled, .boton[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+.principal { background: var(--acento); border-color: var(--acento); color: var(--sobre-acento); font-weight: 600; }
+.suave { background: transparent; color: var(--suave); }
+.peligro { background: transparent; border-color: var(--peligro); color: var(--peligro); }
+.pequeno { padding: 3px 10px; font-size: .78rem; }
+.boton.grande { font-size: .98rem; padding: 12px 22px; }
+.boton small { color: inherit; opacity: .6; font-weight: 400; }
+.acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 18px 0; }
+
+/* ----------------------------------------------------- FILTROS Y PASTILLAS */
+.barra {
+  display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; margin-bottom: 16px;
+}
+.filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filtros span { color: var(--suave); font-size: .88rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
+  border-radius: var(--pastilla); border: 1px solid var(--borde);
+  background: var(--panel); text-decoration: none; font-size: .82rem; color: var(--texto);
+}
+.chip i { font-style: normal; color: var(--suave); font-size: .78em; }
+.chip.activo { border-color: var(--acento); color: var(--acento); }
+.etiquetas { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 16px; }
+
+/* ------------------------------------------------------------- FORMULARIOS */
+select, input[type=text], input[type=search], input[type=number], input[type=date],
+input[type=email], input[type=password], textarea {
+  background: var(--panel-alto); color: var(--texto); border: 1px solid var(--borde);
+  border-radius: var(--radio-chico); padding: 8px 10px; font: inherit;
+  font-size: .92rem; max-width: 100%;
+  transition: border-color var(--t-corto) var(--salida);
+}
+textarea { width: 100%; resize: vertical; line-height: 1.5; }
+.formulario {
+  background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 24px; box-shadow: var(--sombra);
+}
+.formulario.estrecho { max-width: 760px; margin: 0 auto; }
+label { display: block; margin-bottom: 14px; font-size: .88rem; color: var(--suave); }
+label small { color: var(--acento-apagado); }
+label input, label select, label textarea {
+  display: block; width: 100%; margin-top: 5px; color: var(--texto); font-size: .95rem;
+}
+.casilla { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 14px; }
+.casilla input { margin-top: 3px; width: auto; }
+.dos-columnas { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.pareja { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+@media (max-width: 860px) { .dos-columnas, .pareja { grid-template-columns: 1fr; } }
+fieldset {
+  border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: 16px; margin: 0 0 18px;
+}
+legend { color: var(--acento); font-size: .85rem; padding: 0 6px; }
+
+/* Soltar ficheros. */
+.soltar {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; border: 2px dashed var(--borde); border-radius: var(--radio);
+  padding: 44px 20px; text-align: center; cursor: pointer;
+  transition: border-color var(--t-corto) var(--salida),
+              background var(--t-corto) var(--salida);
+}
+.soltar.encima { border-color: var(--acento); background: var(--panel-alto); }
+.soltar input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.soltar span { font-size: 1rem; color: var(--texto); }
+
+/* ---------------------------------------------------- TARJETAS Y REJILLAS */
+.tarjetero {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.caja {
+  background: var(--panel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 16px 18px;
+}
+.caja.destacada { border-color: var(--acento); }
+.caja h2, .caja h3 { margin-top: 0; }
+
+/* Rejilla de portadas / miniaturas. */
+.rejilla {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: 20px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+}
+.tarjeta a { text-decoration: none; display: flex; flex-direction: column; gap: 6px; }
+.tarjeta img {
+  width: 100%; object-fit: cover; border-radius: var(--radio-chico);
+  background: var(--panel-alto); box-shadow: var(--sombra);
+  transition: transform var(--t-corto) var(--salida);
+}
+.tarjeta .titulo {
+  font-size: .88rem; font-weight: 600; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tarjeta .meta { font-size: .78rem; color: var(--suave); }
+
+/* ------------------------------------------------------------------ DATOS */
+/* Pares etiqueta/valor, para fichas. */
+.datos {
+  display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px;
+  margin: 0 0 16px; font-size: .92rem;
+}
+.datos dt { color: var(--suave); }
+.datos dd { margin: 0; }
+
+/* Tablas: para listados largos y números. */
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+thead th {
+  text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--suave); font-weight: 600; padding: 8px 12px;
+  border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap;
+}
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--borde); }
+td.numero, th.numero { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-marco { overflow-x: auto; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--panel); }
+
+/* Progreso y estados. */
+.progreso {
+  height: 6px; border-radius: var(--pastilla); background: var(--panel-alto);
+  margin: 10px 0; overflow: hidden;
+}
+/* La barra crece con transform, no con width: width obliga al navegador a
+   recalcular y repintar en cada fotograma, transform no. Se usa poniendo
+   style="transform: scaleX(0.42)" para un 42 %. */
+.progreso i {
+  display: block; height: 100%; width: 100%; background: var(--acento);
+  transform-origin: left center;
+  transition: transform var(--t-largo) var(--dentro);
+}
+.estado {
+  color: var(--suave); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.estado.ok { color: var(--ok); }
+.estado.error { color: var(--peligro); }
+
+.paginacion {
+  display: flex; gap: 18px; justify-content: center; align-items: center;
+  margin: 34px 0 0; color: var(--suave); font-size: .9rem;
+}
+.pie {
+  text-align: center; color: var(--suave); font-size: .78rem;
+  padding: 26px var(--margen) 40px; border-top: 1px solid var(--borde);
+}
+.pie a { color: var(--suave); }
+
+/* ====================================================================== MÓVIL
+   El iPhone manda aquí: navegación abajo (donde llega el pulgar), nada de
+   letra por debajo de 16 px en los campos (iOS hace zoom), objetivos de 44 px
+   y hueco reservado para la isla dinámica y la barra de gestos. */
+@media (max-width: 760px) {
+  body { padding-bottom: calc(62px + env(safe-area-inset-bottom)); }
+  main { padding: 14px 13px 24px; }
+
+  .cabecera {
+    gap: 10px;
+    padding: calc(env(safe-area-inset-top) + 9px) 13px 9px;
+    flex-wrap: wrap;
+    /* Sin esto el menú de abajo no se queda abajo: un backdrop-filter en el
+       padre hace que lo fijo se fije respecto a él y no a la pantalla.
+       Es el fallo más traicionero de todo este CSS. No quitar. */
+    backdrop-filter: none;
+  }
+  .marca img { width: 32px; height: 32px; }
+  .marca strong { font-size: 1rem; }
+  .marca small { display: none; }
+  .buscador { order: 3; flex: 1 1 100%; max-width: none; }
+  .buscador input { font-size: 16px; }
+  .buscador button { display: none; }  /* en el móvil se busca con el teclado */
+
+  .menu {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: flex; justify-content: space-around; gap: 0; margin: 0;
+    padding: 6px 4px calc(env(safe-area-inset-bottom) + 4px);
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--borde);
+  }
+  .menu a {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 5px 2px; min-height: 50px; border-radius: 12px;
+    font-size: .64rem; position: relative;
+  }
+  .menu a i { display: block; font-size: 1.22rem; font-style: normal; line-height: 1; }
+  .menu a.activo { background: transparent; color: var(--acento); font-weight: 600; }
+  .menu a .punto { position: absolute; top: 4px; right: 50%; margin-right: -16px; }
+
+  .rejilla { gap: 16px 11px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .tarjetero { grid-template-columns: 1fr; }
+  .tarjeta .titulo { font-size: .8rem; }
+  .datos { grid-template-columns: 1fr; gap: 2px 0; }
+  .datos dt { margin-top: 8px; font-size: .78rem; }
+
+  .acciones { flex-direction: column; align-items: stretch; }
+  .acciones > * { width: 100%; }
+  .acciones button, .acciones .boton { justify-content: center; min-height: 46px; }
+  button, .boton { min-height: 44px; }
+  label input, label select, label textarea, input[type=search] { font-size: 16px; min-height: 44px; }
+  .formulario { padding: 16px; border-radius: 16px; }
+  .soltar { padding: 34px 16px; }
+  .chip { padding: 7px 13px; }
+  .caja { border-radius: 14px; }
+  .pie { padding-bottom: 24px; }
+}
+
+/* Pantallas muy estrechas (iPhone mini / SE). */
+@media (max-width: 380px) {
+  .rejilla { grid-template-columns: repeat(2, 1fr); }
+  .menu a span { font-size: .6rem; }
+}
+
+/* Abierta desde el icono de la pantalla de inicio: el navegador no pinta sus
+   barras, hay que dejar hueco arriba a la hora y la batería. */
+@media (display-mode: standalone) {
+  .cabecera { padding-top: calc(env(safe-area-inset-top) + 12px); }
+}
+
+/* ============================================================================
+   VIDALWEAR — lo propio de la app. Todo lo de arriba es la base común.
+   ============================================================================ */
+.centrado { text-align: center; }
+/* Nombres que pone la gente: pueden venir larguísimos y sin espacios. */
+h1, h2, .tarjeta .titulo, .piezas-lista, .perfil-boton strong, .datos dd { overflow-wrap: anywhere; }
+.estrecho { max-width: 640px; margin: 0 auto; }
+.cuenta { color: var(--suave); font-weight: 400; font-size: .7em; font-variant-numeric: tabular-nums; }
+.emoji-grande { font-size: 3rem; margin: 10px 0 0; }
+.etiqueta { color: var(--suave); font-size: .88rem; margin: 6px 0 8px; }
+.cabecera .tema { margin-left: 8px; }
+.menu + .tema { margin-left: 0; }
+.cabecera:not(:has(.menu)) .tema { margin-left: auto; }
+.menu a i.inicial {
+  font-style: normal; display: none; width: 1.5rem; height: 1.5rem; line-height: 1.5rem;
+  border-radius: 50%; background: var(--panel-alto); font-size: .8rem; font-weight: 700;
+  text-align: center;
+}
+
+/* Fila de pastillas que se desliza de lado en el móvil en vez de apilarse. */
+.filtros.desliza { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.filtros.desliza::-webkit-scrollbar { display: none; }
+.filtros.desliza .chip { flex: none; }
+
+/* ---------------------------------------------------------------- PERFILES */
+.perfiles {
+  list-style: none; padding: 0; margin: 28px auto; max-width: 620px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px;
+}
+.perfiles form { margin: 0; }
+.perfil-boton {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 22px 10px; border-radius: var(--radio); background: var(--panel);
+  border: 1px solid var(--borde); text-decoration: none; color: var(--texto); font-size: 1rem;
+}
+.perfil-boton small { color: var(--suave); font-size: .78rem; }
+.avatar {
+  width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 1.7rem; font-weight: 700; background: var(--panel-alto); color: var(--suave);
+}
+.avatar.hombre, .avatar.mujer { background: var(--acento); color: var(--sobre-acento); }
+.perfil-boton.nuevo .avatar { border: 2px dashed var(--borde-fuerte); background: transparent; }
+
+/* Elegir hombre / mujer: dos tarjetas grandes. */
+.genero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.opcion { margin: 0; cursor: pointer; }
+.opcion input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opcion span {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  padding: 20px 10px; border-radius: var(--radio); border: 2px solid var(--borde);
+  background: var(--panel-alto); color: var(--texto);
+  transition: border-color var(--t-corto) var(--salida), transform var(--t-pulsar) var(--salida);
+}
+.opcion span i { font-style: normal; font-size: 2rem; }
+.opcion span small { color: var(--suave); font-size: .76rem; }
+.opcion input:checked + span { border-color: var(--acento); background: var(--acento-flojo); }
+.opcion input:focus-visible + span { outline: 2px solid var(--acento); outline-offset: 2px; }
+.opcion:active span { transform: scale(0.97); }
+
+/* ------------------------------------------------------------- BIENVENIDA */
+.consejos ul { margin: 0; padding-left: 1.1em; }
+.consejos li { margin: 4px 0; }
+.pasos-lista {
+  list-style: none; padding: 0; margin: 20px 0; display: flex; flex-wrap: wrap; gap: 6px;
+}
+.pasos-lista li {
+  font-size: .8rem; padding: 4px 10px; border-radius: var(--pastilla);
+  background: var(--panel); border: 1px solid var(--borde); color: var(--suave);
+}
+.pasos-lista i { font-style: normal; margin-right: 4px; }
+
+/* ----------------------------------------------------------------- AÑADIR */
+.categorias {
+  list-style: none; padding: 0; margin: 0; display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.categorias a {
+  display: flex; align-items: center; gap: 10px; padding: 14px; min-height: 56px;
+  border-radius: var(--radio); background: var(--panel); border: 1px solid var(--borde);
+  text-decoration: none; font-size: .92rem; line-height: 1.2;
+  transition: transform var(--t-pulsar) var(--salida), border-color var(--t-corto) var(--salida);
+  touch-action: manipulation;
+}
+.categorias a:active { transform: scale(0.97); }
+.categorias i { font-style: normal; font-size: 1.5rem; }
+
+/* ----------------------------------------------------------------- SUBIDA */
+.subida { max-width: 720px; margin: 0 auto; }
+.paso { display: flex; align-items: center; gap: 12px; color: var(--suave); font-size: .82rem; }
+.paso span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.paso .progreso { flex: 1; }
+.icono-cat { font-style: normal; }
+.disparadores { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin: 18px 0; }
+.disparo {
+  position: relative; justify-content: center; min-height: 64px; font-size: 1.02rem;
+  border-radius: var(--radio);
+}
+.disparo i { font-style: normal; font-size: 1.3rem; }
+.disparo input { position: absolute; inset: 0; opacity: 0; width: 1px; height: 1px; }
+.disparo:focus-within { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+.tanda {
+  list-style: none; padding: 0; margin: 0; display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.ficha-subida {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px;
+  background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio);
+  transition: opacity var(--t-medio) var(--salida), transform var(--t-medio) var(--salida),
+              border-color var(--t-corto) var(--salida);
+}
+@starting-style { .ficha-subida { opacity: 0; transform: scale(0.96); } }
+.ficha-subida .marco { position: relative; aspect-ratio: 3 / 4; border-radius: var(--radio-chico); overflow: hidden; background: var(--panel-alto); }
+.ficha-subida img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ficha-subida img:not([src]) { visibility: hidden; }
+.ficha-subida .sello {
+  position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+  background: var(--panel); color: var(--suave);
+}
+.ficha-subida.hecha .sello { background: var(--ok); color: #fff; }
+.ficha-subida.fallida { border-color: var(--peligro); }
+.ficha-subida.fallida .sello { background: var(--peligro); color: #fff; }
+.ficha-subida .progreso { margin: 0; height: 4px; }
+.ficha-subida.hecha .progreso { opacity: 0; transition: opacity var(--t-medio) var(--salida); }
+.ficha-subida input { width: 100%; font-size: 16px; padding: 7px 9px; }
+.ficha-subida button { justify-content: center; }
+.vacio-tanda { text-align: center; padding: 18px 0; }
+.ya { margin: 22px 0; }
+.ya summary { cursor: pointer; color: var(--suave); font-size: .9rem; }
+.rejilla.mini { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); margin-top: 12px; }
+.rejilla.mini img { aspect-ratio: 1; object-fit: cover; }
+.rejilla.mini img.recorte { object-fit: contain; padding: 6px; }
+
+/* Los botones de avanzar, siempre a mano: pegados abajo, encima del menú. */
+.barra-pasos {
+  position: sticky; bottom: 0; z-index: 10; display: flex; gap: 10px; justify-content: flex-end;
+  padding: 12px 0; margin-top: 22px;
+  background: var(--fondo); border-top: 1px solid var(--borde);
+}
+.barra-pasos .principal { flex: 1 1 auto; justify-content: center; max-width: 360px; }
+
+/* ---------------------------------------------------------------- ARMARIO */
+.grupo h2 { display: flex; align-items: center; gap: 8px; }
+.grupo h2 .boton { margin-left: auto; }
+/* La prenda sin fondo flota sobre un panel; la foto sin procesar lo llena. */
+.lienzo-prenda {
+  position: relative; display: block; aspect-ratio: 3 / 4; border-radius: var(--radio-chico);
+  background: var(--panel-alto); overflow: hidden; margin: 0;
+}
+.lienzo-prenda img { width: 100%; height: 100%; display: block; box-shadow: none; border-radius: 0; }
+.lienzo-prenda.foto img { object-fit: cover; }
+.lienzo-prenda.recorte img { object-fit: contain; padding: 10%; background: transparent; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+.rejilla.prendas .tarjeta img { aspect-ratio: auto; }
+.sello-bandeja {
+  position: absolute; top: 6px; right: 6px; font-size: .8rem; padding: 2px 6px;
+  border-radius: var(--pastilla); background: color-mix(in srgb, var(--panel) 85%, transparent);
+}
+
+/* ------------------------------------------------------------------ PRENDA */
+.ficha-prenda { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.lienzo-prenda.grande { aspect-ratio: 4 / 5; border-radius: var(--radio); }
+.editar { margin: 18px 0; }
+.editar summary, .peligroso summary { cursor: pointer; color: var(--suave); }
+.editar form { margin-top: 14px; }
+.desprender { margin-top: 22px; }
+.peligroso { margin-top: 26px; }
+.peligroso summary { color: var(--peligro); }
+
+/* -------------------------------------------------------------- CONJUNTOS */
+.filtros-conjuntos { display: grid; gap: 10px; margin-bottom: 22px; }
+.grupo-filtro { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 8px; }
+.grupo-filtro > span { color: var(--suave); font-size: .82rem; }
+.conjuntos { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.conjunto { display: flex; flex-direction: column; gap: 4px; }
+.conjunto h2 { margin: 10px 0 2px; font-size: 1.1rem; }
+.conjunto.destacada { margin-bottom: 8px; }
+/* El conjunto «sobre la cama»: las prendas grandes a dos columnas, los
+   accesorios más pequeños al final. */
+.lienzo {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  background: var(--panel-alto); border-radius: var(--radio-chico); padding: 12px;
+}
+.pieza { display: block; flex: 0 0 calc(50% - 4px); aspect-ratio: 1; }
+.pieza img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+.pieza.capa-cuerpo { flex-basis: calc(50% - 4px); aspect-ratio: 3 / 4; }
+.pieza.capa-calzado { flex-basis: calc(33% - 6px); }
+.pieza.capa-accesorio { flex-basis: calc(25% - 6px); }
+.piezas-lista { list-style: none; padding: 0; margin: 0 0 4px; font-size: .86rem; color: var(--suave); }
+.valorar { display: flex; gap: 8px; margin-top: 8px; }
+.valorar button.activo { border-color: var(--acento); color: var(--acento); }
+.descartados summary { cursor: pointer; color: var(--suave); }
+.descartados .conjuntos { margin-top: 14px; opacity: .8; }
+
+@media (hover: hover) and (pointer: fine) {
+  .perfil-boton:hover, .categorias a:hover, .opcion:hover span { border-color: var(--acento); }
+  .tarjeta a:hover .lienzo-prenda img { transform: none; }
+}
+
+@media (max-width: 760px) {
+  .menu a i.inicial { display: block; }
+  .cabecera .tema { margin-left: auto; }
+  .ficha-prenda { grid-template-columns: 1fr; gap: 14px; }
+  .lienzo-prenda.grande { max-height: 62dvh; }
+  .disparadores { grid-template-columns: 1fr; }
+  .disparo.principal { min-height: 76px; }
+  .tanda { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .barra-pasos { bottom: calc(62px + env(safe-area-inset-bottom)); }
+  .grupo-filtro { grid-template-columns: 1fr; gap: 4px; }
+  .conjuntos { grid-template-columns: 1fr; }
+  .genero { gap: 10px; }
+}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}{{ c.nombre }} · {{ app }}{% endblock %}
+{% block contenido %}
+{% if guiado and siguiente %}
+  {% set destino = url_for('web.subir', clave=siguiente.clave, guiado=1) %}
+{% elif guiado %}
+  {% set destino = url_for('web.bienvenida_fin') %}
+{% else %}
+  {% set destino = url_for('web.armario', c=c.clave) %}
+{% endif %}
+
+<div class="subida" id="subida" data-categoria="{{ c.clave }}" data-otros="{{ 1 if c.clave == 'otros' else 0 }}">
+  {% if guiado and paso %}
+  <div class="paso">
+    <span>Paso {{ paso }} de {{ total }}</span>
+    <div class="progreso"><i style="transform: scaleX({{ '%.3f'|format(paso / total) }})"></i></div>
+  </div>
+  {% endif %}
+
+  <h1><i class="icono-cat">{{ c.icono }}</i> {% if c.clave == 'otros' %}¿Algo más?{% else %}Fotografiemos {{ c.tus }}{% endif %}</h1>
+  <p class="explica">{{ c.consejo }}</p>
+
+  {% if c.clave == 'otros' %}
+  <label>¿Qué vas a subir?
+    <input type="text" id="nombre-otros" maxlength="80" placeholder="Por ejemplo: tirantes, bañador, guantes…" autocapitalize="sentences">
+  </label>
+  {% endif %}
+
+  <div class="disparadores">
+    <label class="boton principal disparo">
+      <input type="file" accept="image/*" capture="environment" id="camara">
+      <i>📷</i> Hacer foto
+    </label>
+    <label class="boton disparo">
+      <input type="file" accept="image/*" multiple id="galeria">
+      <i>🖼️</i> De la galería
+    </label>
+  </div>
+
+  <ul class="tanda" id="tanda" aria-live="polite"></ul>
+  <p class="explica vacio-tanda" id="vacio-tanda">
+    {% if ya %}Ya tienes {{ ya|length }} aquí. Las nuevas aparecerán abajo según las hagas.{% else %}Las fotos aparecerán aquí según las hagas. Puedes hacer todas las que quieras seguidas.{% endif %}
+  </p>
+
+  {% if ya %}
+  <details class="ya">
+    <summary>Las que ya tienes ({{ ya|length }})</summary>
+    <ul class="rejilla mini">
+      {% for p in ya %}
+      <li class="tarjeta"><a href="{{ url_for('web.prenda', pid=p.id) }}">
+        <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy" class="{{ 'recorte' if p.recorte }}">
+        <span class="meta">{{ p.nombre or c.nombre }}</span></a></li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  <div class="barra-pasos">
+    {% if guiado %}
+      <a class="boton suave" href="{{ url_for('web.bienvenida_fin') }}" data-esperar>Terminar aquí</a>
+      <a class="boton principal" id="seguir" href="{{ destino }}" data-esperar
+         data-con="{% if siguiente %}Siguiente: {{ siguiente.nombre }} →{% else %}Terminar ✓{% endif %}"
+         data-sin="{% if siguiente %}No tengo, siguiente →{% else %}Terminar ✓{% endif %}">
+        {% if siguiente %}No tengo, siguiente →{% else %}Terminar ✓{% endif %}</a>
+    {% else %}
+      <a class="boton principal" id="seguir" href="{{ destino }}" data-esperar data-con="Hecho ✓" data-sin="Volver">Volver</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block guion %}<script src="{{ url_for('static', filename='subir.js', v=version) }}"></script>{% endblock %}

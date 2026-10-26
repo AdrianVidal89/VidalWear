@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es" data-tema="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block titulo %}{{ app }}{% endblock %}</title>
+  <meta name="theme-color" content="#f4f5f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="{{ app }}">
+  <link rel="manifest" href="{{ url_for('web.manifiesto') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icono.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icono.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css', v=version) }}">
+  <script>
+    try {
+      var t = localStorage.getItem('tema');
+      if (t) document.documentElement.dataset.tema = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+
+<header class="cabecera">
+  <a class="marca" href="/">
+    <img src="{{ url_for('static', filename='icono.png') }}" width="38" height="38" alt="">
+    <span>
+      <strong>{{ app }}</strong>
+      <small>Tu armario, en el bolsillo</small>
+    </span>
+  </a>
+
+  {% if usuario %}
+  <nav class="menu">
+    <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}"><i>▦</i><span>Armario</span></a>
+    <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}"><i>＋</i><span>Añadir</span></a>
+    <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}"><i>✦</i><span>Conjuntos</span></a>
+    <a href="{{ url_for('web.perfil') }}" class="{{ 'activo' if seccion == 'perfil' }}"><i class="inicial">{{ usuario.nombre[:1]|upper }}</i><span>{{ usuario.nombre }}</span></a>
+  </nav>
+  {% endif %}
+  <button type="button" class="suave pequeno tema" id="cambia-tema" title="Claro / oscuro" aria-label="Cambiar entre claro y oscuro">◐</button>
+</header>
+
+{% if mensajes %}
+<div class="avisos">
+  {% for tipo, texto in mensajes %}
+    <p class="aviso {{ tipo }}">{{ texto }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main>
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  {{ app }} {{ version }}
+</footer>
+
+<script>
+  document.getElementById('cambia-tema')?.addEventListener('click', function () {
+    var h = document.documentElement;
+    var orden = ['auto', 'claro', 'oscuro'];
+    var siguiente = orden[(orden.indexOf(h.dataset.tema || 'auto') + 1) % 3];
+    h.dataset.tema = siguiente;
+    try {
+      if (siguiente === 'auto') localStorage.removeItem('tema');
+      else localStorage.setItem('tema', siguiente);
+    } catch (e) {}
+  });
+</script>
+{% block guion %}{% endblock %}
+</body>
+</html>

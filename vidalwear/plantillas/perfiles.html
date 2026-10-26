@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}¿Quién eres? · {{ app }}{% endblock %}
+{% block contenido %}
+<h1 class="centrado">¿Quién eres?</h1>
+<ul class="perfiles">
+  {% for p in perfiles %}
+  <li>
+    <form method="post" action="{{ url_for('web.entrar_perfil', uid=p.id) }}">
+      <button type="submit" class="perfil-boton">
+        <span class="avatar {{ p.genero }}">{{ p.nombre[:1]|upper }}</span>
+        <strong>{{ p.nombre }}</strong>
+        <small>{{ p.n_prendas }} prenda{{ '' if p.n_prendas == 1 else 's' }}</small>
+      </button>
+    </form>
+  </li>
+  {% endfor %}
+  <li>
+    <a class="perfil-boton nuevo" href="{{ url_for('web.nuevo') }}">
+      <span class="avatar">＋</span>
+      <strong>Añadir persona</strong>
+      <small>&nbsp;</small>
+    </a>
+  </li>
+</ul>
+{% endblock %}

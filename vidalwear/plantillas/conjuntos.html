@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block titulo %}Conjuntos · {{ app }}{% endblock %}
+
+{% macro tarjeta(c, mejor=False) %}
+<article class="conjunto caja {{ 'destacada' if mejor }}" data-id="{{ c.id }}">
+  {% if mejor %}<p class="estado">La mejor para esto</p>{% endif %}
+  <div class="lienzo">
+    {% for p in c.prendas %}
+    <a href="{{ url_for('web.prenda', pid=p.id) }}" class="pieza capa-{{ cat(p.categoria).capa }}" title="{{ p.nombre }}">
+      <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}" loading="lazy">
+    </a>
+    {% endfor %}
+  </div>
+  <h2>{{ c.titulo }}</h2>
+  <ul class="piezas-lista">
+    {% for p in c.prendas %}<li>{{ cat(p.categoria).icono }} {{ p.nombre or cat(p.categoria).nombre }}</li>{% endfor %}
+  </ul>
+  {% if c.explicacion %}<p class="explica">{{ c.explicacion }}</p>{% endif %}
+  <div class="etiquetas">
+    {% for o in c.ocasiones %}<span class="chip">{{ catalogo.etiqueta_filtro('ocasion', o) }}</span>{% endfor %}
+    {% for m in c.momentos %}<span class="chip">{{ catalogo.etiqueta_filtro('momento', m) }}</span>{% endfor %}
+    {% for t in c.temporadas %}<span class="chip">{{ catalogo.etiqueta_filtro('temporada', t) }}</span>{% endfor %}
+  </div>
+  <div class="valorar" role="group" aria-label="¿Te gusta?">
+    <button type="button" class="pequeno {{ 'activo' if c.valoracion == 1 }}" data-valor="1" aria-pressed="{{ 'true' if c.valoracion == 1 else 'false' }}">👍 Me gusta</button>
+    <button type="button" class="pequeno {{ 'activo' if c.valoracion == -1 }}" data-valor="-1" aria-pressed="{{ 'true' if c.valoracion == -1 else 'false' }}">👎 No me lo pondría</button>
+  </div>
+</article>
+{% endmacro %}
+
+{% block contenido %}
+<h1>¿Qué me pongo?</h1>
+
+<div class="filtros-conjuntos">
+  {% for grupo, (titulo, opciones) in catalogo.FILTROS.items() %}
+  <div class="grupo-filtro">
+    <span>{{ titulo }}</span>
+    <div class="filtros desliza">
+      {% for clave, nombre in opciones %}
+        {% set marcado = elegidos.get(grupo) == clave %}
+        {% set args = dict(elegidos) %}
+        {% if marcado %}{% set _ = args.pop(grupo) %}{% else %}{% set _ = args.update({grupo: clave}) %}{% endif %}
+        {% if not args %}{% set _ = args.update({'todo': 1}) %}{% endif %}
+        <a class="chip {{ 'activo' if marcado }}" href="{{ url_for('web.conjuntos', **args) }}" aria-pressed="{{ 'true' if marcado else 'false' }}">{{ nombre }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not hay_alguno %}
+<div class="vacio centrado">
+  <p class="emoji-grande">🪡</p>
+  {% if n_armario < 3 %}
+  <p>En cuanto el taller procese tu ropa, aquí aparecerán los conjuntos.</p>
+  {% else %}
+  <p>Aún no hay conjuntos preparados. Los crea el estilista en el próximo paso por el taller.</p>
+  {% endif %}
+</div>
+{% elif exactos %}
+  {{ tarjeta(exactos[0], True) }}
+  {% if exactos|length > 1 %}
+  <h2>Otras opciones</h2>
+  <div class="conjuntos">{% for c in exactos[1:] %}{{ tarjeta(c) }}{% endfor %}</div>
+  {% endif %}
+{% else %}
+  <p class="aviso atencion">Ninguno encaja con todo lo que has marcado.{% if parecidos %} Estos son los más cercanos:{% endif %}</p>
+  <div class="conjuntos">{% for c in parecidos %}{{ tarjeta(c) }}{% endfor %}</div>
+{% endif %}
+
+{% if descartados %}
+<details class="seccion descartados">
+  <summary>Los que no te pondrías ({{ descartados|length }})</summary>
+  <div class="conjuntos">{% for c in descartados %}{{ tarjeta(c) }}{% endfor %}</div>
+</details>
+{% endif %}
+{% endblock %}
+
+{% block guion %}
+<script>
+  // «Me gusta» / «No me lo pondría». Volver a pulsar lo quita. El estilista lo
+  // lee en el siguiente paso por el taller para afinar los conjuntos nuevos.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.valorar button');
+    if (!b) return;
+    var tarjeta = b.closest('.conjunto');
+    var valor = b.classList.contains('activo') ? 0 : parseInt(b.dataset.valor, 10);
+    tarjeta.querySelectorAll('.valorar button').forEach(function (x) {
+      var on = parseInt(x.dataset.valor, 10) === valor;
+      x.classList.toggle('activo', on);
+      x.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    fetch('/api/conjuntos/' + tarjeta.dataset.id + '/valorar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valor: valor })
+    });
+  });
+</script>
+{% endblock %}

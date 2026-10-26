@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}¡Listo! · {{ app }}{% endblock %}
+{% block contenido %}
+<div class="estrecho centrado">
+  <p class="emoji-grande">✨</p>
+  {% if n_bandeja %}
+  <h1>¡Hecho!</h1>
+  <p>Tienes <strong>{{ n_bandeja }} prenda{{ '' if n_bandeja == 1 else 's' }}</strong> esperando en la bandeja.</p>
+  <p class="explica">Ahora toca el taller: les quitamos el fondo, las fichamos y te
+    preparamos conjuntos. Mientras tanto ya las ves en tu armario.</p>
+  {% else %}
+  <h1>Cuando quieras</h1>
+  <p class="explica">Puedes subir tu ropa en cualquier momento desde «Añadir».</p>
+  {% endif %}
+  <div class="acciones">
+    <a class="boton principal grande" href="{{ url_for('web.armario') }}">Ver mi armario</a>
+    <a class="boton" href="{{ url_for('web.anadir') }}">Subir algo más</a>
+  </div>
+</div>
+{% endblock %}

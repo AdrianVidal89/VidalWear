@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titulo %}Añadir · {{ app }}{% endblock %}
+{% block contenido %}
+<h1>¿Qué vas a subir?</h1>
+<ul class="categorias">
+  {% for c in categorias %}
+  <li><a href="{{ url_for('web.subir', clave=c.clave) }}"><i>{{ c.icono }}</i><span>{{ c.nombre }}</span></a></li>
+  {% endfor %}
+</ul>
+<p class="explica centrado"><a href="{{ url_for('web.bienvenida') }}">Repetir la guía paso a paso</a></p>
+{% endblock %}

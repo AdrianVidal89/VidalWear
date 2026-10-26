@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva persona · {{ app }}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario estrecho">
+  <h1>Empecemos</h1>
+  <p class="explica">Vamos a meter tu armario en el móvil: haces fotos a tu ropa, nosotros
+    le quitamos el fondo y te proponemos con qué combinarla.</p>
+
+  <label>¿Cómo te llamas?
+    <input type="text" name="nombre" value="{{ nombre }}" maxlength="40" required
+           autocomplete="given-name" autocapitalize="words" placeholder="Tu nombre">
+  </label>
+
+  <p class="etiqueta">¿Qué armario vamos a montar?</p>
+  <div class="genero">
+    <label class="opcion">
+      <input type="radio" name="genero" value="hombre" required>
+      <span><i>👔</i><strong>Hombre</strong><small>Camisas, chinos, relojes…</small></span>
+    </label>
+    <label class="opcion">
+      <input type="radio" name="genero" value="mujer" required>
+      <span><i>👗</i><strong>Mujer</strong><small>Vestidos, faldas, bolsos…</small></span>
+    </label>
+  </div>
+  <p class="explica">Solo cambia qué prendas te va pidiendo la guía. Siempre podrás subir
+    cualquier cosa desde «Otros».</p>
+
+  <div class="acciones">
+    <button type="submit" class="principal boton grande">Crear y empezar</button>
+  </div>
+</form>
+{% endblock %}

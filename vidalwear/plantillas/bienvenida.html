@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titulo %}Bienvenida · {{ app }}{% endblock %}
+{% block contenido %}
+<div class="estrecho">
+  <h1>Hola, {{ usuario.nombre }} 👋</h1>
+  <p>Vamos a fotografiar tu ropa por tandas: primero {{ pasos[0].tus }}, luego
+    {{ pasos[1].tus }}… y así hasta {{ pasos|length }} pasos. Lo que no tengas, te lo saltas.</p>
+
+  <div class="caja consejos">
+    <h3>Para que salga bien</h3>
+    <ul>
+      <li><strong>Una prenda por foto.</strong></li>
+      <li><strong>Fondo liso</strong>: la cama, el suelo o una puerta.</li>
+      <li><strong>Buena luz</strong>, mejor de día y sin flash.</li>
+      <li>No hace falta que quede perfecta: <strong>el fondo lo quitamos nosotros</strong>.</li>
+    </ul>
+  </div>
+
+  <ol class="pasos-lista">
+    {% for p in pasos %}<li><i>{{ p.icono }}</i>{{ p.nombre }}</li>{% endfor %}
+  </ol>
+
+  <div class="acciones">
+    <a class="boton principal grande" href="{{ url_for('web.subir', clave=pasos[0].clave, guiado=1) }}">Empezar</a>
+    <a class="boton suave" href="{{ url_for('web.bienvenida_fin') }}">Ahora no, ya lo haré</a>
+  </div>
+</div>
+{% endblock %}
