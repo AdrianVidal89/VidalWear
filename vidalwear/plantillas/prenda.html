@@ -2,17 +2,18 @@
 {% block titulo %}{{ p.nombre or cat(p.categoria).nombre }} · {{ app }}{% endblock %}
 {% block contenido %}
 {% set f = p.ficha %}
-<p><a class="boton suave pequeno" href="{{ url_for('web.armario', c=p.categoria) }}">← {{ cat(p.categoria).nombre }}</a></p>
+<p class="miga"><a href="{{ url_for('web.armario', c=p.categoria) }}">← {{ cat(p.categoria).nombre }}</a></p>
 
 <div class="ficha-prenda">
   <figure class="lienzo-prenda grande {{ 'recorte' if p.recorte else 'foto' }}">
-    <img src="{{ url_for('web.foto', pid=p.id, tipo='vista', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}">
+    <img class="aparece" src="{{ url_for('web.foto', pid=p.id, tipo='vista', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}">
   </figure>
 
-  <div>
-    <h1>{{ p.nombre or cat(p.categoria).nombre }}</h1>
+  <div class="ficha-detalle">
+    <p class="antetitulo">{{ cat(p.categoria).nombre }}</p>
+    <h1 class="nombre-producto">{{ p.nombre or cat(p.categoria).nombre }}</h1>
     {% if p.estado == 'bandeja' %}
-      <p class="aviso atencion">⏳ En la bandeja: el taller aún no le ha quitado el fondo ni la ha fichado.</p>
+      <p class="aviso atencion">En la bandeja: el taller aún no le ha quitado el fondo ni la ha fichado.</p>
     {% endif %}
 
     {% if f %}
@@ -27,7 +28,7 @@
     {% endif %}
     {% if n_conjuntos %}<p class="explica">Sale en {{ n_conjuntos }} conjunto{{ '' if n_conjuntos == 1 else 's' }}.</p>{% endif %}
 
-    <details class="caja editar">
+    <details class="desplegable editar">
       <summary>Cambiar nombre o categoría</summary>
       <form method="post">
         <label>Nombre <input type="text" name="nombre" value="{{ p.nombre }}" maxlength="80"></label>

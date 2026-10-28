@@ -1,46 +1,71 @@
 <!doctype html>
-<html lang="es" data-tema="auto">
+<html lang="es" data-tema="auto" data-densidad="2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block titulo %}{{ app }}{% endblock %}</title>
-  <meta name="theme-color" content="#f4f5f6" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="{{ app }}">
   <link rel="manifest" href="{{ url_for('web.manifiesto') }}">
   <link rel="icon" href="{{ url_for('static', filename='icono.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icono.png') }}">
+  <link rel="preload" href="{{ url_for('static', filename='fuentes/bodoni-moda.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fuentes/inter.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css', v=version) }}">
   <script>
+    // Tema y densidad de la rejilla antes de pintar: así no hay parpadeo.
+    // «js» en <html> permite que las fotos entren con fundido sin quedarse
+    // invisibles si el JavaScript no llegara a cargar.
+    document.documentElement.classList.add('js');
     try {
       var t = localStorage.getItem('tema');
       if (t) document.documentElement.dataset.tema = t;
+      var d = localStorage.getItem('densidad');
+      if (d) document.documentElement.dataset.densidad = d;
     } catch (e) {}
   </script>
 </head>
 <body>
 
 <header class="cabecera">
-  <a class="marca" href="/">
-    <img src="{{ url_for('static', filename='icono.png') }}" width="38" height="38" alt="">
-    <span>
-      <strong>{{ app }}</strong>
-      <small>Tu armario, en el bolsillo</small>
-    </span>
-  </a>
+  <button type="button" class="hamburguesa" id="abre-menu" aria-controls="menu-completo"
+          aria-expanded="false" aria-label="Abrir el menú"><i></i><i></i></button>
+
+  <a class="marca" href="/" aria-label="{{ app }}, inicio">VIDALWEAR</a>
 
   {% if usuario %}
-  <nav class="menu">
-    <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}"><i>▦</i><span>Armario</span></a>
-    <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}"><i>＋</i><span>Añadir</span></a>
-    <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}"><i>✦</i><span>Conjuntos</span></a>
-    <a href="{{ url_for('web.perfil') }}" class="{{ 'activo' if seccion == 'perfil' }}"><i class="inicial">{{ usuario.nombre[:1]|upper }}</i><span>{{ usuario.nombre }}</span></a>
+  <nav class="menu" aria-label="Secciones">
+    <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}">Armario</a>
+    <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}">Añadir</a>
+    <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}">Conjuntos</a>
+    <a href="{{ url_for('web.perfil') }}" class="persona {{ 'activo' if seccion == 'perfil' }}">{{ usuario.nombre }}</a>
   </nav>
   {% endif %}
-  <button type="button" class="suave pequeno tema" id="cambia-tema" title="Claro / oscuro" aria-label="Cambiar entre claro y oscuro">◐</button>
+  <button type="button" class="tema" id="cambia-tema" title="Claro / oscuro" aria-label="Cambiar entre claro y oscuro"><i></i></button>
 </header>
+
+<dialog class="menu-completo" id="menu-completo" aria-label="Menú">
+  <div class="menu-completo-arriba">
+    <button type="button" class="cerrar" id="cierra-menu" aria-label="Cerrar el menú"><i></i><i></i></button>
+    <span class="marca">VIDALWEAR</span>
+  </div>
+  <nav aria-label="Menú principal">
+    {% if usuario %}
+    <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}">Armario</a>
+    <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}">Añadir ropa</a>
+    <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}">Conjuntos</a>
+    <a href="{{ url_for('web.bienvenida') }}">La guía paso a paso</a>
+    <a href="{{ url_for('web.perfil') }}" class="{{ 'activo' if seccion == 'perfil' }}">{{ usuario.nombre }}</a>
+    {% else %}
+    <a href="{{ url_for('web.perfiles') }}">¿Quién eres?</a>
+    <a href="{{ url_for('web.nuevo') }}">Añadir persona</a>
+    {% endif %}
+  </nav>
+  <p class="menu-completo-pie">Tu armario, en el bolsillo · {{ version }}</p>
+</dialog>
 
 {% if mensajes %}
 <div class="avisos">
@@ -58,17 +83,77 @@
   {{ app }} {{ version }}
 </footer>
 
+{% if usuario %}
+<nav class="barra-movil" aria-label="Secciones">
+  <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}">Armario</a>
+  <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}">Añadir</a>
+  <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}">Conjuntos</a>
+  <a href="{{ url_for('web.perfil') }}" class="{{ 'activo' if seccion == 'perfil' }}">{{ usuario.nombre }}</a>
+</nav>
+{% endif %}
+
 <script>
-  document.getElementById('cambia-tema')?.addEventListener('click', function () {
+  (function () {
     var h = document.documentElement;
-    var orden = ['auto', 'claro', 'oscuro'];
-    var siguiente = orden[(orden.indexOf(h.dataset.tema || 'auto') + 1) % 3];
-    h.dataset.tema = siguiente;
-    try {
-      if (siguiente === 'auto') localStorage.removeItem('tema');
-      else localStorage.setItem('tema', siguiente);
-    } catch (e) {}
-  });
+
+    // Claro / oscuro / el del sistema.
+    document.getElementById('cambia-tema')?.addEventListener('click', function () {
+      var orden = ['auto', 'claro', 'oscuro'];
+      var siguiente = orden[(orden.indexOf(h.dataset.tema || 'auto') + 1) % 3];
+      h.dataset.tema = siguiente;
+      try {
+        if (siguiente === 'auto') localStorage.removeItem('tema');
+        else localStorage.setItem('tema', siguiente);
+      } catch (e) {}
+    });
+
+    // Menú a pantalla completa. <dialog> da gratis el foco atrapado y Escape.
+    var menu = document.getElementById('menu-completo');
+    var abre = document.getElementById('abre-menu');
+    function cerrar() { if (menu.open) menu.close(); }
+    abre.addEventListener('click', function () {
+      if (menu.showModal) menu.showModal(); else menu.setAttribute('open', '');
+      abre.setAttribute('aria-expanded', 'true');
+    });
+    menu.addEventListener('close', function () { abre.setAttribute('aria-expanded', 'false'); });
+    document.getElementById('cierra-menu').addEventListener('click', cerrar);
+
+    // Densidad de la rejilla (1 = fotos grandes, 3 = muchas pequeñas).
+    function marcarDensidad() {
+      document.querySelectorAll('[data-pon-densidad]').forEach(function (x) {
+        x.setAttribute('aria-pressed', x.dataset.ponDensidad === h.dataset.densidad ? 'true' : 'false');
+      });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pon-densidad]');
+      if (!b) return;
+      h.dataset.densidad = b.dataset.ponDensidad;
+      marcarDensidad();
+      try { localStorage.setItem('densidad', b.dataset.ponDensidad); } catch (e) {}
+    });
+    marcarDensidad();
+
+    // Las fotos entran con un fundido cuando terminan de cargar. Las que ya
+    // venían de la caché se muestran al momento, sin animación.
+    document.querySelectorAll('img.aparece').forEach(function (img) {
+      if (img.complete && img.naturalWidth) { img.classList.add('cargada', 'sin-fundido'); return; }
+      var lista = function () { img.classList.add('cargada'); };
+      img.addEventListener('load', lista, { once: true });
+      img.addEventListener('error', lista, { once: true });
+    });
+
+    // Con ratón, al pasar por una prenda ya recortada se ve la foto original,
+    // como el cambio de foto de una tienda. La foto se pide la primera vez que
+    // hace falta, no antes: en el móvil no se baja nunca.
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      document.querySelectorAll('[data-otra]').forEach(function (cel) {
+        cel.addEventListener('mouseenter', function () {
+          var otra = cel.querySelector('img.otra');
+          if (otra && !otra.getAttribute('src')) otra.src = cel.dataset.otra;
+        }, { once: true });
+      });
+    }
+  })();
 </script>
 {% block guion %}{% endblock %}
 </body>

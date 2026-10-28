@@ -2,18 +2,19 @@
 {% block titulo %}Conjuntos · {{ app }}{% endblock %}
 
 {% macro tarjeta(c, mejor=False) %}
-<article class="conjunto caja {{ 'destacada' if mejor }}" data-id="{{ c.id }}">
-  {% if mejor %}<p class="estado">La mejor para esto</p>{% endif %}
+<article class="conjunto {{ 'destacada' if mejor }}" data-id="{{ c.id }}">
   <div class="lienzo">
     {% for p in c.prendas %}
     <a href="{{ url_for('web.prenda', pid=p.id) }}" class="pieza capa-{{ cat(p.categoria).capa }}" title="{{ p.nombre }}">
-      <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}" loading="lazy">
+      <img class="aparece" src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}" loading="lazy">
     </a>
     {% endfor %}
   </div>
+  <div class="conjunto-texto">
+  {% if mejor %}<p class="antetitulo">La mejor para esto</p>{% endif %}
   <h2>{{ c.titulo }}</h2>
   <ul class="piezas-lista">
-    {% for p in c.prendas %}<li>{{ cat(p.categoria).icono }} {{ p.nombre or cat(p.categoria).nombre }}</li>{% endfor %}
+    {% for p in c.prendas %}<li>{{ p.nombre or cat(p.categoria).nombre }}</li>{% endfor %}
   </ul>
   {% if c.explicacion %}<p class="explica">{{ c.explicacion }}</p>{% endif %}
   <div class="etiquetas">
@@ -22,14 +23,18 @@
     {% for t in c.temporadas %}<span class="chip">{{ catalogo.etiqueta_filtro('temporada', t) }}</span>{% endfor %}
   </div>
   <div class="valorar" role="group" aria-label="¿Te gusta?">
-    <button type="button" class="pequeno {{ 'activo' if c.valoracion == 1 }}" data-valor="1" aria-pressed="{{ 'true' if c.valoracion == 1 else 'false' }}">👍 Me gusta</button>
-    <button type="button" class="pequeno {{ 'activo' if c.valoracion == -1 }}" data-valor="-1" aria-pressed="{{ 'true' if c.valoracion == -1 else 'false' }}">👎 No me lo pondría</button>
+    <button type="button" class="pequeno {{ 'activo' if c.valoracion == 1 }}" data-valor="1" aria-pressed="{{ 'true' if c.valoracion == 1 else 'false' }}">Me gusta</button>
+    <button type="button" class="pequeno {{ 'activo' if c.valoracion == -1 }}" data-valor="-1" aria-pressed="{{ 'true' if c.valoracion == -1 else 'false' }}">No me lo pondría</button>
+  </div>
   </div>
 </article>
 {% endmacro %}
 
 {% block contenido %}
-<h1>¿Qué me pongo?</h1>
+<div class="portada">
+  <p class="antetitulo">Conjuntos</p>
+  <h1 class="titular">¿Qué me pongo?</h1>
+</div>
 
 <div class="filtros-conjuntos">
   {% for grupo, (titulo, opciones) in catalogo.FILTROS.items() %}
@@ -50,7 +55,6 @@
 
 {% if not hay_alguno %}
 <div class="vacio centrado">
-  <p class="emoji-grande">🪡</p>
   {% if n_armario < 3 %}
   <p>En cuanto el taller procese tu ropa, aquí aparecerán los conjuntos.</p>
   {% else %}
@@ -60,7 +64,7 @@
 {% elif exactos %}
   {{ tarjeta(exactos[0], True) }}
   {% if exactos|length > 1 %}
-  <h2>Otras opciones</h2>
+  <h2 class="rotulo">Otras opciones</h2>
   <div class="conjuntos">{% for c in exactos[1:] %}{{ tarjeta(c) }}{% endfor %}</div>
   {% endif %}
 {% else %}

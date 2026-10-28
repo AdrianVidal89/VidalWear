@@ -1,40 +1,49 @@
 {% extends "base.html" %}
 {% block titulo %}Armario · {{ app }}{% endblock %}
 {% block contenido %}
-<div class="barra">
-  <h1>Tu armario <small class="cuenta">{{ total }}</small></h1>
+<div class="portada">
+  <p class="antetitulo">{{ usuario.nombre }}</p>
+  <h1 class="titular">Armario <small class="cuenta">{{ total }}</small></h1>
 </div>
 
 {% if n_bandeja %}
-<p class="aviso atencion">⏳ {{ n_bandeja }} prenda{{ '' if n_bandeja == 1 else 's' }} en la bandeja,
+<p class="aviso atencion">{{ n_bandeja }} prenda{{ '' if n_bandeja == 1 else 's' }} en la bandeja,
   esperando al taller para quitarles el fondo y ficharlas.</p>
 {% endif %}
 
 {% if not total %}
 <div class="vacio centrado">
-  <p class="emoji-grande">🧺</p>
-  <p>Tu armario está vacío.</p>
-  <div class="acciones"><a class="boton principal grande" href="{{ url_for('web.bienvenida') }}">Empezar a subir ropa</a></div>
+  <p class="titular-medio">Tu armario está vacío</p>
+  <div class="acciones centradas"><a class="boton principal grande" href="{{ url_for('web.bienvenida') }}">Empezar a subir ropa</a></div>
 </div>
 {% else %}
-<nav class="filtros desliza" aria-label="Categorías">
-  <a class="chip {{ 'activo' if not filtro }}" href="{{ url_for('web.armario') }}">Todo</a>
-  {% for k in claves %}
-  <a class="chip {{ 'activo' if filtro == k }}" href="{{ url_for('web.armario', c=k) }}">{{ cat(k).icono }} {{ cat(k).nombre }} <i>{{ grupos[k]|length }}</i></a>
-  {% endfor %}
-</nav>
+<div class="barra-catalogo">
+  <nav class="filtros desliza" aria-label="Categorías">
+    <a class="chip {{ 'activo' if not filtro }}" href="{{ url_for('web.armario') }}" {{ 'aria-current=page' if not filtro }}>Todo</a>
+    {% for k in claves %}
+    <a class="chip {{ 'activo' if filtro == k }}" href="{{ url_for('web.armario', c=k) }}" {{ 'aria-current=page' if filtro == k }}>{{ cat(k).nombre }} <i>{{ grupos[k]|length }}</i></a>
+    {% endfor %}
+  </nav>
+  <div class="densidad" role="group" aria-label="Tamaño de las fotos">
+    <button type="button" data-pon-densidad="1" aria-label="Fotos grandes"><i class="d1"></i></button>
+    <button type="button" data-pon-densidad="2" aria-label="Fotos medianas"><i class="d2"></i></button>
+    <button type="button" data-pon-densidad="3" aria-label="Fotos pequeñas"><i class="d3"></i></button>
+  </div>
+</div>
 
 {% for k in visibles %}
 <section class="grupo">
-  <h2>{{ cat(k).nombre }} <small class="cuenta">{{ grupos[k]|length }}</small>
-    <a class="boton pequeno suave" href="{{ url_for('web.subir', clave=k) }}">＋ Añadir</a></h2>
+  <h2 class="rotulo">{{ cat(k).nombre }} <small class="cuenta">{{ grupos[k]|length }}</small>
+    <a class="enlace" href="{{ url_for('web.subir', clave=k) }}">Añadir</a></h2>
   <ul class="rejilla prendas">
     {% for p in grupos[k] %}
     <li class="tarjeta">
       <a href="{{ url_for('web.prenda', pid=p.id) }}">
-        <span class="lienzo-prenda {{ 'recorte' if p.recorte else 'foto' }}">
-          <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy">
-          {% if p.estado == 'bandeja' %}<span class="sello-bandeja" title="En la bandeja">⏳</span>{% endif %}
+        <span class="lienzo-prenda {{ 'recorte' if p.recorte else 'foto' }}"
+              {% if p.recorte %}data-otra="{{ url_for('web.foto', pid=p.id, tipo='mini', v=p.procesado or p.creado) }}"{% endif %}>
+          <img class="aparece" src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy">
+          {% if p.recorte %}<img class="otra" alt="">{% endif %}
+          {% if p.estado == 'bandeja' %}<span class="sello-bandeja">En la bandeja</span>{% endif %}
         </span>
         <span class="titulo">{{ p.nombre or cat(k).nombre }}</span>
         {% if p.ficha.color %}<span class="meta">{{ p.ficha.color }}</span>{% endif %}

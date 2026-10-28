@@ -2,7 +2,8 @@
 {% block titulo %}Bienvenida · {{ app }}{% endblock %}
 {% block contenido %}
 <div class="estrecho">
-  <h1>Hola, {{ usuario.nombre }} 👋</h1>
+  <p class="antetitulo">Bienvenida</p>
+  <h1 class="titular">Hola, {{ usuario.nombre }}</h1>
   <p>Vamos a fotografiar tu ropa por tandas: primero {{ pasos[0].tus }}, luego
     {{ pasos[1].tus }}… y así hasta {{ pasos|length }} pasos. Lo que no tengas, te lo saltas.</p>
 
@@ -17,7 +18,7 @@
   </div>
 
   <ol class="pasos-lista">
-    {% for p in pasos %}<li><i>{{ p.icono }}</i>{{ p.nombre }}</li>{% endfor %}
+    {% for p in pasos %}<li>{{ p.nombre }}</li>{% endfor %}
   </ol>
 
   <div class="acciones">

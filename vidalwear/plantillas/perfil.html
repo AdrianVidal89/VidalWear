@@ -2,16 +2,17 @@
 {% block titulo %}{{ usuario.nombre }} · {{ app }}{% endblock %}
 {% block contenido %}
 <div class="estrecho">
-  <h1>{{ usuario.nombre }}</h1>
+  <p class="antetitulo">Tu perfil</p>
+  <h1 class="titular">{{ usuario.nombre }}</h1>
   <p class="explica">{{ n_prendas }} prenda{{ '' if n_prendas == 1 else 's' }} en el armario{% if n_bandeja %}, {{ n_bandeja }} en la bandeja{% endif %}.</p>
 
   <div class="acciones">
-    <form method="post" action="{{ url_for('web.salir') }}"><button type="submit" class="boton grande">⇄ Cambiar de persona</button></form>
+    <form method="post" action="{{ url_for('web.salir') }}"><button type="submit" class="boton grande">Cambiar de persona</button></form>
     <a class="boton" href="{{ url_for('web.bienvenida') }}">Repetir la guía</a>
   </div>
 
   <form method="post" class="formulario">
-    <h2>Tus datos</h2>
+    <h2 class="rotulo">Tus datos</h2>
     <label>Nombre <input type="text" name="nombre" value="{{ usuario.nombre }}" maxlength="40" required></label>
     <label>Armario de
       <select name="genero">
@@ -21,7 +22,7 @@
     <button type="submit" class="principal">Guardar</button>
   </form>
 
-  <details class="caja peligroso">
+  <details class="desplegable peligroso">
     <summary>Borrar este perfil</summary>
     <form method="post" action="{{ url_for('web.borrar_perfil') }}">
       <p class="explica">Se borran todas sus prendas, fotos y conjuntos. No se puede deshacer.

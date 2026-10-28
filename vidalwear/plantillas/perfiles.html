@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}¿Quién eres? · {{ app }}{% endblock %}
 {% block contenido %}
-<h1 class="centrado">¿Quién eres?</h1>
+<h1 class="titular centrado">¿Quién eres?</h1>
 <ul class="perfiles">
   {% for p in perfiles %}
   <li>
@@ -16,7 +16,7 @@
   {% endfor %}
   <li>
     <a class="perfil-boton nuevo" href="{{ url_for('web.nuevo') }}">
-      <span class="avatar">＋</span>
+      <span class="avatar">+</span>
       <strong>Añadir persona</strong>
       <small>&nbsp;</small>
     </a>

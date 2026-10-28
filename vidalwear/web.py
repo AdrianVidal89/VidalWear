@@ -314,7 +314,7 @@ def manifiesto():
     return jsonify({
         "name": ajustes().titulo, "short_name": ajustes().titulo,
         "start_url": "/", "display": "standalone",
-        "background_color": "#111315", "theme_color": "#111315",
+        "background_color": "#ffffff", "theme_color": "#ffffff",
         "icons": [{"src": url_for("static", filename="icono.png"),
                    "sizes": "512x512", "type": "image/png"}],
     }), 200, {"Content-Type": "application/manifest+json"}

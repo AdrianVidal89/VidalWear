@@ -17,7 +17,8 @@
   </div>
   {% endif %}
 
-  <h1><i class="icono-cat">{{ c.icono }}</i> {% if c.clave == 'otros' %}¿Algo más?{% else %}Fotografiemos {{ c.tus }}{% endif %}</h1>
+  <p class="antetitulo">{{ c.nombre }}</p>
+  <h1 class="titular">{% if c.clave == 'otros' %}¿Algo más?{% else %}Fotografiemos {{ c.tus }}{% endif %}</h1>
   <p class="explica">{{ c.consejo }}</p>
 
   {% if c.clave == 'otros' %}
@@ -29,11 +30,11 @@
   <div class="disparadores">
     <label class="boton principal disparo">
       <input type="file" accept="image/*" capture="environment" id="camara">
-      <i>📷</i> Hacer foto
+      Hacer foto
     </label>
     <label class="boton disparo">
       <input type="file" accept="image/*" multiple id="galeria">
-      <i>🖼️</i> Varias de la galería
+      Varias de la galería
     </label>
   </div>
 
@@ -48,7 +49,7 @@
     <ul class="rejilla mini">
       {% for p in ya %}
       <li class="tarjeta"><a href="{{ url_for('web.prenda', pid=p.id) }}">
-        <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy" class="{{ 'recorte' if p.recorte }}">
+        <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy" class="aparece {{ 'recorte' if p.recorte }}">
         <span class="meta">{{ p.nombre or c.nombre }}</span></a></li>
       {% endfor %}
     </ul>
