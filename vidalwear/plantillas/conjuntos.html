@@ -9,6 +9,8 @@
   <h1 class="titular">¿Qué me pongo?</h1>
 </div>
 
+{% if peticion %}<p class="aviso atencion pendiente"><a href="#rehacer">Has pedido conjuntos nuevos: pendiente de la estilista.</a></p>{% endif %}
+
 <div class="filtros-conjuntos">
   {% for grupo, (titulo, opciones) in catalogo.FILTROS.items() %}
   <div class="grupo-filtro">
@@ -44,6 +46,35 @@
   <p class="aviso atencion">Ninguno encaja con todo lo que has marcado.{% if parecidos %} Estos son los más cercanos:{% endif %}</p>
   <div class="conjuntos">{% for c in parecidos %}{{ tarjeta(c) }}{% endfor %}</div>
 {% endif %}
+
+<section class="rehacer" id="rehacer" aria-labelledby="rehacer-titulo">
+  {% if peticion %}
+  <h2 class="rotulo" id="rehacer-titulo">Conjuntos nuevos · pendiente</h2>
+  <p>Pediste conjuntos nuevos el {{ peticion.creado[8:10] }}/{{ peticion.creado[5:7] }}. La estilista los rehará en su próxima pasada; los que te gustan se quedan.</p>
+  {% if peticion.comentario %}<p class="explica">«{{ peticion.comentario }}»</p>{% endif %}
+  <details class="desplegable">
+    <summary>Cambiar el comentario o anular</summary>
+    <form method="post" action="{{ url_for('web.rehacer_conjuntos') }}">
+      <label>Comentario para la estilista
+        <textarea name="comentario" rows="3" maxlength="500">{{ peticion.comentario }}</textarea>
+      </label>
+      <div class="acciones">
+        <button type="submit" class="principal">Guardar</button>
+        <button type="submit" name="anular" value="1" class="suave">Anular la petición</button>
+      </div>
+    </form>
+  </details>
+  {% else %}
+  <h2 class="rotulo" id="rehacer-titulo">¿No te convencen?</h2>
+  {% if atendida and atendida.nota %}<p class="explica">Última vez: {{ atendida.nota }}</p>{% endif %}
+  <form method="post" action="{{ url_for('web.rehacer_conjuntos') }}" class="pedir">
+    <label>Comentario para la estilista <span class="suave">(opcional)</span>
+      <textarea name="comentario" rows="2" maxlength="500" placeholder="Por ejemplo: más cosas para la oficina, nada de chándal"></textarea>
+    </label>
+    <button type="submit" class="boton">Rehacer conjuntos</button>
+  </form>
+  {% endif %}
+</section>
 
 {% if descartados %}
 <details class="seccion descartados">

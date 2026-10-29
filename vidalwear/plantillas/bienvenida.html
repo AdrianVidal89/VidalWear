@@ -4,8 +4,8 @@
 <div class="estrecho">
   <p class="antetitulo">Bienvenida</p>
   <h1 class="titular">Hola, {{ usuario.nombre }}</h1>
-  <p>Vamos a fotografiar tu ropa por tandas: primero {{ pasos[0].tus }}, luego
-    {{ pasos[1].tus }}… y así hasta {{ pasos|length }} pasos. Lo que no tengas, te lo saltas.</p>
+  <p>Hazle fotos a tu ropa y súbelas todas de golpe. La estilista les quita el fondo, las
+    clasifica y te prepara conjuntos.</p>
 
   <div class="caja consejos">
     <h3>Para que salga bien</h3>
@@ -17,13 +17,9 @@
     </ul>
   </div>
 
-  <ol class="pasos-lista">
-    {% for p in pasos %}<li>{{ p.nombre }}</li>{% endfor %}
-  </ol>
-
   <div class="acciones">
-    <a class="boton principal grande" href="{{ url_for('web.subir', clave=pasos[0].clave, guiado=1) }}">Empezar</a>
-    <a class="boton suave" href="{{ url_for('web.bienvenida_fin') }}">Ahora no, ya lo haré</a>
+    <a class="boton principal grande" href="{{ url_for('web.anadir') }}">Subir mi ropa</a>
+    <a class="boton suave" href="{{ url_for('web.armario') }}">Ahora no, ya lo haré</a>
   </div>
 </div>
 {% endblock %}

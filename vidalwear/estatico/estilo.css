@@ -605,6 +605,39 @@ label input, label select, label textarea {
 .peligroso summary { color: var(--peligro); }
 .peligroso form { padding: 6px 0 20px; }
 
+/* Pastillas para elegir (de quién es la ropa, temporadas de la ficha):
+   recuadro fino; la elegida, en negativo, como «Me gusta». */
+fieldset.para-quien, fieldset.temporadas { border: 0; padding: 0; margin: 0 0 20px; min-width: 0; }
+fieldset.temporadas legend, fieldset.para-quien legend { padding: 0; margin-bottom: 8px; }
+fieldset.temporadas legend { font-size: .7rem; text-transform: uppercase; letter-spacing: .14em; color: var(--suave); }
+.para-quien .filtros { gap: 8px; padding-bottom: 2px; }
+.casillas { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-radio { position: relative; margin: 0; cursor: pointer; flex: none; }
+.chip-radio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip-radio span {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+  border: 1px solid var(--borde); color: var(--texto);
+  font-size: .66rem; text-transform: uppercase; letter-spacing: .14em; white-space: nowrap;
+  user-select: none; -webkit-user-select: none;
+  transition: background-color var(--t-corto) var(--salida), color var(--t-corto) var(--salida),
+              border-color var(--t-corto) var(--salida), transform var(--t-pulsar) var(--salida);
+}
+.chip-radio input:checked + span { background: var(--texto); color: var(--fondo); border-color: var(--texto); }
+.chip-radio input:focus-visible + span { outline: 1px solid var(--linea); outline-offset: 3px; }
+.chip-radio:active span { transform: scale(0.98); }
+.consejos-cortos {
+  list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 4px 18px; font-size: .64rem; text-transform: uppercase; letter-spacing: .14em; color: var(--suave);
+}
+.corregido { font-size: .9em; text-transform: none; letter-spacing: normal; color: var(--suave); }
+.corregir > .explica { margin: 4px 0 18px; }
+.corregir button { width: 100%; }
+/* «Rehacer conjuntos»: al final de la lista, sin hacer ruido. */
+.rehacer { max-width: 620px; margin-top: 56px; }
+.rehacer .rotulo { margin-top: 0; }
+.rehacer textarea { resize: vertical; }
+.pendiente a { text-decoration: none; color: var(--texto); }
+
 /* -------------------------------------------------------------- CONJUNTOS */
 .filtros-conjuntos { display: grid; gap: 0; margin: 0 0 30px; border-top: 1px solid var(--borde); }
 .grupo-filtro {
@@ -689,6 +722,7 @@ label input, label select, label textarea {
   .categorias a:hover i { transform: translateX(4px); color: var(--texto); }
   .opcion:hover span { border-color: var(--linea); }
   .valorar button.activo:hover { opacity: .82; }
+  .chip-radio:hover span { border-color: var(--linea); }
   .menu-completo nav a:hover { font-style: italic; }
 }
 
@@ -704,7 +738,7 @@ label input, label select, label textarea {
   }
   ::view-transition-old(root), ::view-transition-new(root) { animation: 160ms linear both vw-fundido !important; }
   ::view-transition-old(root) { animation-direction: reverse !important; }
-  button:active, .boton:active, .opcion:active span, .mini-conjunto:active .lienzo { transform: none; }
+  button:active, .boton:active, .opcion:active span, .mini-conjunto:active .lienzo, .chip-radio:active span { transform: none; }
   .menu-completo, .menu-completo[open] nav a { transform: none !important; }
 }
 @keyframes vw-fundido { from { opacity: 0; } }

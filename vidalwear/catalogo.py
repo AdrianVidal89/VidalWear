@@ -69,7 +69,15 @@ CATEGORIAS = {
               "Abiertas, de frente."),
     "otros": ("Otros", "lo que falte", "✚", "accesorio",
               "Lo que no encaje arriba. Ponle nombre para saber qué es."),
+    # Lo que se sube de golpe entra aquí y lo clasifica la estilista en el
+    # taller. No sale en la guía ni en el selector salvo para la prenda que
+    # todavía la tenga.
+    "porclasificar": ("Por clasificar", "tu ropa", "⏳", "accesorio",
+                      "Una prenda por foto, sobre un fondo liso y con buena luz."),
 }
+
+# La categoría de la ropa recién subida, antes de que la mire la estilista.
+SIN_CLASIFICAR = "porclasificar"
 
 GUIA = {
     "hombre": ["camisetas", "polos", "camisas", "jerseis", "chaquetas", "americanas",
@@ -129,6 +137,12 @@ def etiqueta_filtro(grupo, clave):
             return nombre
     return clave
 
+
+# Los datos de la ficha que la persona puede corregir desde la app (además
+# del nombre y la categoría). Cada corrección queda apuntada para la estilista.
+CAMPOS_FICHA = {"color": "Color", "material": "Tejido", "patron": "Dibujo",
+                "formalidad": "Estilo", "temporadas": "Temporada"}
+CAMPOS_CORREGIBLES = {"nombre": "Nombre", "categoria": "Tipo de prenda", **CAMPOS_FICHA}
 
 FORMALIDAD = {1: "Deportivo", 2: "Casual", 3: "Arreglado informal",
               4: "De oficina", 5: "Formal"}

@@ -8,7 +8,7 @@ ficha y monta conjuntos que luego se filtran por ocasión, momento y temporada.
 
 | Dónde | Qué |
 |---|---|
-| NAS (`vidalwear/`, puerto 8085) | La app: perfiles, guía de alta por hombre/mujer, cámara con compresión en el propio móvil, armario, bajas y conjuntos. Flask + SQLite + Pillow. |
+| NAS (`vidalwear/`, puerto 8085) | La app: perfiles, subida de muchas fotos de golpe con compresión en el propio móvil, armario, corrección de fichas, bajas, conjuntos y peticiones de «rehacer conjuntos». Flask + SQLite + Pillow. |
 | Portátil (`taller/vidalwear.py`) | Baja la bandeja, recorta el fondo con `rembg` (modelo `isnet-general-use`), sube recortes y fichas, rehace el inventario `.md` del vault y carga los conjuntos. |
 
 ## Ciclo de una prenda

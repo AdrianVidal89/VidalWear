@@ -11,33 +11,52 @@
   </figure>
 
   <div class="ficha-detalle">
-    <p class="antetitulo">{{ cat(p.categoria).nombre }}</p>
+    <p class="antetitulo">{{ cat(p.categoria).nombre }}{% if 'categoria' in corregidos %} <small class="corregido">· corregido por ti</small>{% endif %}</p>
     <h1 class="nombre-producto">{{ p.nombre or cat(p.categoria).nombre }}</h1>
     {% if p.estado == 'bandeja' %}
-      <p class="aviso atencion">En la bandeja: el taller aún no le ha quitado el fondo ni la ha fichado.</p>
+      <p class="aviso atencion">En la bandeja: la estilista aún no le ha quitado el fondo ni la ha clasificado.</p>
     {% endif %}
 
     {% if f %}
     <dl class="datos">
-      {% if f.color %}<dt>Color</dt><dd>{{ f.color }}</dd>{% endif %}
-      {% if f.material %}<dt>Tejido</dt><dd>{{ f.material }}</dd>{% endif %}
-      {% if f.patron %}<dt>Dibujo</dt><dd>{{ f.patron }}</dd>{% endif %}
-      {% if f.formalidad %}<dt>Estilo</dt><dd>{{ catalogo.FORMALIDAD.get(f.formalidad, f.formalidad) }}</dd>{% endif %}
-      {% if f.temporadas %}<dt>Temporada</dt><dd>{% for t in f.temporadas %}{{ catalogo.etiqueta_filtro('temporada', t) }}{{ ', ' if not loop.last }}{% endfor %}</dd>{% endif %}
+      {% if f.color %}<dt>Color{% if "color" in corregidos %} <small class="corregido">· corregido</small>{% endif %}</dt><dd>{{ f.color }}</dd>{% endif %}
+      {% if f.material %}<dt>Tejido{% if "material" in corregidos %} <small class="corregido">· corregido</small>{% endif %}</dt><dd>{{ f.material }}</dd>{% endif %}
+      {% if f.patron %}<dt>Dibujo{% if "patron" in corregidos %} <small class="corregido">· corregido</small>{% endif %}</dt><dd>{{ f.patron }}</dd>{% endif %}
+      {% if f.formalidad %}<dt>Estilo{% if "formalidad" in corregidos %} <small class="corregido">· corregido</small>{% endif %}</dt><dd>{{ catalogo.FORMALIDAD.get(f.formalidad, f.formalidad) }}</dd>{% endif %}
+      {% if f.temporadas %}<dt>Temporada{% if "temporadas" in corregidos %} <small class="corregido">· corregido</small>{% endif %}</dt><dd>{% for t in f.temporadas %}{{ catalogo.etiqueta_filtro('temporada', t) }}{{ ', ' if not loop.last }}{% endfor %}</dd>{% endif %}
       {% if f.descripcion %}<dt>Nota</dt><dd>{{ f.descripcion }}</dd>{% endif %}
     </dl>
     {% endif %}
     {% if n_conjuntos %}<p class="explica"><a class="enlace" href="#va-con">Sale en {{ n_conjuntos }} conjunto{{ '' if n_conjuntos == 1 else 's' }}</a>.</p>{% endif %}
 
-    <details class="desplegable editar">
-      <summary>Cambiar nombre o categoría</summary>
-      <form method="post">
-        <label>Nombre <input type="text" name="nombre" value="{{ p.nombre }}" maxlength="80"></label>
-        <label>Categoría
+    <details class="desplegable editar" {{ 'open' if p.categoria == catalogo.SIN_CLASIFICAR and p.estado == 'armario' }}>
+      <summary>¿Algo no está bien? Corrígelo</summary>
+      <form method="post" class="corregir">
+        <p class="explica">Lo que cambies aquí queda apuntado para la estilista, que lo respetará en sus próximos conjuntos.</p>
+        <label>Qué es
           <select name="categoria">
             {% for c in categorias %}<option value="{{ c.clave }}" {{ 'selected' if c.clave == p.categoria }}>{{ c.nombre }}</option>{% endfor %}
           </select>
         </label>
+        <label>Nombre <input type="text" name="nombre" value="{{ p.nombre }}" maxlength="80" placeholder="Por ejemplo: camisa Oxford azul"></label>
+        <label>Color <input type="text" name="color" value="{{ f.color or '' }}" maxlength="60" placeholder="Por ejemplo: azul marino"></label>
+        <label>Estilo
+          <select name="formalidad">
+            <option value="" {{ 'selected' if not f.formalidad }}>Sin decir</option>
+            {% for n, nombre in catalogo.FORMALIDAD.items() %}<option value="{{ n }}" {{ 'selected' if f.formalidad == n }}>{{ nombre }}</option>{% endfor %}
+          </select>
+        </label>
+        <fieldset class="temporadas">
+          <legend>Temporada</legend>
+          <input type="hidden" name="hay_temporadas" value="1">
+          <div class="casillas">
+            {% for clave, nombre in catalogo.FILTROS.temporada[1] %}
+            <label class="chip-radio"><input type="checkbox" name="temporadas" value="{{ clave }}" {{ 'checked' if clave in (f.temporadas or []) }}><span>{{ nombre }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <label>Tejido <input type="text" name="material" value="{{ f.material or '' }}" maxlength="60" placeholder="Por ejemplo: lino"></label>
+        <label>Dibujo <input type="text" name="patron" value="{{ f.patron or '' }}" maxlength="60" placeholder="Por ejemplo: rayas"></label>
         <button type="submit" class="principal">Guardar</button>
       </form>
     </details>

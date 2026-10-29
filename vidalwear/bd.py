@@ -59,6 +59,33 @@ CREATE TABLE IF NOT EXISTS conjunto_prendas (
     orden INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (conjunto_id, prenda_id)
 );
+
+-- Lo que la persona corrige en la ficha de una prenda («esto no es un
+-- jersey, es un…»). La estilista lo lee en el taller y lo respeta: un campo
+-- corregido por la persona no lo vuelve a pisar el taller.
+CREATE TABLE IF NOT EXISTS correcciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prenda_id INTEGER NOT NULL REFERENCES prendas(id) ON DELETE CASCADE,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    campo TEXT NOT NULL,
+    antes TEXT,                       -- JSON
+    despues TEXT,                     -- JSON
+    creado TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    atendida TEXT                     -- cuándo la vio la estilista (NULL = pendiente)
+);
+CREATE INDEX IF NOT EXISTS correcciones_por_prenda ON correcciones(prenda_id);
+
+-- Lo que la persona pide desde la app («rehacer conjuntos»). Una pendiente
+-- como mucho por persona y tipo; al pedir otra vez se actualiza el comentario.
+CREATE TABLE IF NOT EXISTS peticiones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    tipo TEXT NOT NULL DEFAULT 'rehacer_conjuntos',
+    comentario TEXT NOT NULL DEFAULT '',
+    creado TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    atendida TEXT,
+    nota TEXT NOT NULL DEFAULT ''     -- lo que contesta la estilista al atenderla
+);
 """
 
 
@@ -253,3 +280,101 @@ def guardar_conjuntos(uid, lista, reemplazar):
         creados += 1
     con.commit()
     return creados
+
+
+# -------------------------------------------------------------- CORRECCIONES
+def corregir(pid, uid, campo, antes, despues):
+    bd().execute(
+        "INSERT INTO correcciones (prenda_id, usuario_id, campo, antes, despues) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (pid, uid, campo, json.dumps(antes, ensure_ascii=False),
+         json.dumps(despues, ensure_ascii=False)))
+    bd().commit()
+
+
+def campos_corregidos(pid):
+    """Los campos de una prenda que ha corregido la persona alguna vez."""
+    return {f["campo"] for f in bd().execute(
+        "SELECT DISTINCT campo FROM correcciones WHERE prenda_id = ?", (pid,))}
+
+
+def _correccion(f):
+    c = dict(f)
+    for k in ("antes", "despues"):
+        try:
+            c[k] = json.loads(c[k]) if c[k] is not None else None
+        except ValueError:
+            pass
+    return c
+
+
+def correcciones(pendientes=True, uid=None):
+    sql = ("SELECT c.*, p.nombre AS prenda_nombre, p.categoria AS prenda_categoria, "
+           "u.nombre AS persona FROM correcciones c JOIN prendas p ON p.id = c.prenda_id "
+           "JOIN usuarios u ON u.id = c.usuario_id WHERE 1 = 1")
+    args = []
+    if pendientes:
+        sql += " AND c.atendida IS NULL"
+    if uid is not None:
+        sql += " AND c.usuario_id = ?"
+        args.append(uid)
+    return [_correccion(f) for f in bd().execute(sql + " ORDER BY c.id", args)]
+
+
+# ---------------------------------------------------------------- PETICIONES
+def peticion_pendiente(uid, tipo="rehacer_conjuntos"):
+    f = bd().execute("SELECT * FROM peticiones WHERE usuario_id = ? AND tipo = ? "
+                     "AND atendida IS NULL ORDER BY id DESC LIMIT 1", (uid, tipo)).fetchone()
+    return dict(f) if f else None
+
+
+def ultima_atendida(uid, tipo="rehacer_conjuntos"):
+    f = bd().execute("SELECT * FROM peticiones WHERE usuario_id = ? AND tipo = ? "
+                     "AND atendida IS NOT NULL ORDER BY atendida DESC LIMIT 1",
+                     (uid, tipo)).fetchone()
+    return dict(f) if f else None
+
+
+def pedir(uid, comentario, tipo="rehacer_conjuntos"):
+    ya = peticion_pendiente(uid, tipo)
+    if ya:
+        bd().execute("UPDATE peticiones SET comentario = ? WHERE id = ?", (comentario, ya["id"]))
+    else:
+        bd().execute("INSERT INTO peticiones (usuario_id, tipo, comentario) VALUES (?, ?, ?)",
+                     (uid, tipo, comentario))
+    bd().commit()
+
+
+def anular_peticion(uid, tipo="rehacer_conjuntos"):
+    """Solo se anula la pendiente; las atendidas se quedan como historial."""
+    bd().execute("DELETE FROM peticiones WHERE usuario_id = ? AND tipo = ? AND atendida IS NULL",
+                 (uid, tipo))
+    bd().commit()
+
+
+def peticiones(pendientes=True):
+    sql = ("SELECT pe.*, u.nombre AS persona FROM peticiones pe "
+           "JOIN usuarios u ON u.id = pe.usuario_id")
+    if pendientes:
+        sql += " WHERE pe.atendida IS NULL"
+    return [dict(f) for f in bd().execute(sql + " ORDER BY pe.id")]
+
+
+def atender(peticiones_ids=(), correcciones_ids=(), nota=""):
+    ahora = "datetime('now', 'localtime')"
+    con = bd()
+    n_p = n_c = 0
+    for i in peticiones_ids:
+        n_p += con.execute(f"UPDATE peticiones SET atendida = {ahora}, nota = ? "
+                           "WHERE id = ? AND atendida IS NULL", (nota, int(i))).rowcount
+    for i in correcciones_ids:
+        n_c += con.execute(f"UPDATE correcciones SET atendida = {ahora} "
+                           "WHERE id = ? AND atendida IS NULL", (int(i),)).rowcount
+    con.commit()
+    return n_p, n_c
+
+
+def contar_avisos():
+    con = bd()
+    return (con.execute("SELECT COUNT(*) FROM peticiones WHERE atendida IS NULL").fetchone()[0],
+            con.execute("SELECT COUNT(*) FROM correcciones WHERE atendida IS NULL").fetchone()[0])

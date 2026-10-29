@@ -2,20 +2,25 @@
 //
 // Cada foto se comprime EN EL MÓVIL antes de salir (1600 px, JPEG al 82 %):
 // una foto de 4-12 MB se queda en 200-400 KB y sube en un segundo incluso por
-// datos. Se suben en cola, de dos en dos, mientras la persona sigue haciendo
+// datos. Se suben en cola, de dos en dos, mientras la persona sigue eligiendo
 // fotos: nunca tiene que esperar a que termine una para hacer la siguiente.
+//
+// Desde la 0.2.0 es una sola pantalla: todo entra en la bandeja sin
+// clasificar y la estilista decide qué es cada prenda. Solo se elige de quién
+// es la ropa.
 (function () {
   'use strict';
 
   var LADO = 1600, CALIDAD = 0.82, A_LA_VEZ = 2;
   var raiz = document.getElementById('subida');
   if (!raiz) return;
-  var categoria = raiz.dataset.categoria;
-  var esOtros = raiz.dataset.otros === '1';
   var tanda = document.getElementById('tanda');
   var vacio = document.getElementById('vacio-tanda');
   var seguir = document.getElementById('seguir');
-  var nombreOtros = document.getElementById('nombre-otros');
+  function dueno() {
+    var marcado = document.querySelector('input[name="para"]:checked');
+    return marcado ? marcado.value : raiz.dataset.usuario;
+  }
 
   var cola = [], activas = 0, pendientes = 0, subidas = 0, total = 0;
 
@@ -85,7 +90,7 @@
       // tal cual y que la convierta el servidor.
       return t.fichero;
     }).then(function (blob) {
-      cola.push({ li: t.li, blob: blob });
+      cola.push({ li: t.li, blob: blob, usuario: t.usuario });
       siguiente();
       comprimiendo = false;
       // Un respiro entre foto y foto para que el móvil libere memoria.
@@ -99,13 +104,9 @@
     li.className = 'ficha-subida subiendo';
     li.innerHTML =
       '<div class="marco"><img alt=""><span class="sello">⏳</span></div>' +
-      '<div class="progreso"><i style="transform: scaleX(0)"></i></div>' +
-      '<input type="text" maxlength="80" placeholder="' +
-      (esOtros ? '¿Qué es?' : 'Nombre (opcional)') + '" aria-label="Nombre de la prenda">';
+      '<div class="progreso"><i style="transform: scaleX(0)"></i></div>';
     tanda.prepend(li);
     vacio.hidden = true;
-    var entrada = li.querySelector('input');
-    if (esOtros && nombreOtros && nombreOtros.value.trim()) entrada.value = nombreOtros.value.trim();
     return li;
   }
 
@@ -115,25 +116,14 @@
     li.querySelector('.sello').textContent = sello;
   }
 
-  function guardarNombre(li) {
-    var entrada = li.querySelector('input');
-    if (!li.dataset.id || entrada.dataset.guardado === entrada.value) return;
-    entrada.dataset.guardado = entrada.value;
-    fetch('/api/prendas/' + li.dataset.id + '/nombre', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre: entrada.value })
-    });
-  }
-
   // ------------------------------------------------------------------- cola
   function encolar(fichero) {
     var li = nuevaFicha();
     pendientes++;
     total++;
     actualizarBoton();
-    li.querySelector('input').addEventListener('change', function () { guardarNombre(li); });
-    porComprimir.push({ li: li, fichero: fichero });
+    // El dueño se fija al elegir la foto: si luego se cambia, no afecta a las ya elegidas.
+    porComprimir.push({ li: li, fichero: fichero, usuario: dueno() });
     comprimirSiguiente();
   }
 
@@ -144,8 +134,7 @@
   function subir(t) {
     activas++;
     var fd = new FormData();
-    fd.append('categoria', categoria);
-    fd.append('nombre', t.li.querySelector('input').value.trim());
+    fd.append('usuario', t.usuario);
     fd.append('foto', t.blob, 'foto.jpg');
     var x = new XMLHttpRequest();
     x.open('POST', '/api/prendas');
@@ -158,8 +147,6 @@
       try { r = JSON.parse(x.responseText); } catch (e) {}
       if (x.status === 200 && r.id) {
         t.li.dataset.id = r.id;
-        t.li.querySelector('input').dataset.guardado = t.li.querySelector('input').value;
-        guardarNombre(t.li);  // por si se escribió el nombre mientras subía
         estado(t.li, 'hecha', '✓');
         subidas++;
       } else {
@@ -205,21 +192,10 @@
   document.getElementById('camara').addEventListener('change', alElegir);
   document.getElementById('galeria').addEventListener('change', alElegir);
 
-  // En «Otros», el nombre de arriba se copia a las fotos que aún no lo tengan.
-  if (nombreOtros) {
-    nombreOtros.addEventListener('change', function () {
-      tanda.querySelectorAll('.ficha-subida').forEach(function (li) {
-        var e = li.querySelector('input');
-        if (!e.value.trim()) { e.value = nombreOtros.value.trim(); guardarNombre(li); }
-      });
-    });
-  }
-
-  // Si se pulsa «Siguiente» con fotos subiendo, se espera a que terminen.
+  // Si se pulsa «Hecho» con fotos subiendo, se espera a que terminen.
   var esperando = null;
   document.querySelectorAll('[data-esperar]').forEach(function (a) {
     a.addEventListener('click', function (e) {
-      tanda.querySelectorAll('.ficha-subida').forEach(guardarNombre);
       if (pendientes > 0) {
         e.preventDefault();
         esperando = a.href;

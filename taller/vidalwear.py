@@ -3,8 +3,9 @@
 
 El NAS guarda y enseña; el trabajo pesado (quitar el fondo con un modelo de
 IA) y el criterio (fichar la prenda, montar conjuntos) se hacen aquí, con
-Claude Code. Flujo normal, cuando Adrian dice «procesa VidalWear»:
+Claude Code. Flujo normal, cuando Adrian dice «mira VidalWear»:
 
+    vidalwear avisos                 LO PRIMERO: peticiones y correcciones de las personas
     vidalwear estado                 ¿qué hay en la bandeja?
     vidalwear bajar                  descarga las fotos pendientes
     vidalwear recortar               les quita el fondo y hace hojas de contacto
@@ -14,6 +15,8 @@ Claude Code. Flujo normal, cuando Adrian dice «procesa VidalWear»:
     vidalwear armario <id>           el armario en JSON, para montar conjuntos
     vidalwear conjuntos <id>         los conjuntos que hay y lo que opinó la persona
     vidalwear cargar conjuntos.json  sube conjuntos nuevos
+    vidalwear atender --peticiones 3 --correcciones 5,6 --nota "…"
+                                     marca como atendido lo que ya se ha resuelto
 
 Solo usa la biblioteca estándar más Pillow y rembg (en taller/.venv).
 """
@@ -40,6 +43,8 @@ HECHAS = TRABAJO / "hechas"
 # isnet-general-use recorta bien cualquier objeto (ropa, zapatos, relojes).
 # El de ropa (u2net_cloth_seg) solo sabe de prendas de cuerpo, no de un reloj.
 MODELO = os.environ.get("VIDALWEAR_MODELO", "isnet-general-use")
+# La categoría de lo que se sube de golpe desde el móvil (catalogo.SIN_CLASIFICAR).
+SIN_CLASIFICAR = "porclasificar"
 
 
 # ------------------------------------------------------------------- red
@@ -89,6 +94,9 @@ def usuarios():
 def estado(_):
     e = pedir("/api/taller/estado")
     print(f"VidalWear ({URL}): {e['personas']} persona(s), {e['bandeja']} prenda(s) en la bandeja.")
+    if e.get("peticiones") or e.get("correcciones"):
+        print(f"Avisos pendientes: {e.get('peticiones', 0)} petición(es), "
+              f"{e.get('correcciones', 0)} corrección(es). Míralos con: vidalwear avisos")
     locales = sorted(PENDIENTES.glob("*/prenda.json")) if PENDIENTES.exists() else []
     if locales:
         sin_recortar = [p for p in locales if not (p.parent / "recorte.png").exists()]
@@ -223,6 +231,17 @@ def recortar(args):
 
 def subir(args):
     fichas = json.loads(Path(args.fichero).read_text())
+    # Lo subido de golpe llega «por clasificar»: antes de mandar nada, que
+    # todas tengan su categoría de verdad (o que la persona ya la corrigiera).
+    sin = []
+    for pid, f in fichas.items():
+        local = PENDIENTES / str(pid) / "prenda.json"
+        actual = json.loads(local.read_text()).get("categoria") if local.exists() else None
+        if f.get("categoria", actual) in (None, SIN_CLASIFICAR):
+            sin.append(pid)
+    if sin:
+        sys.exit(f"Sin categoría en fichas.json (siguen «{SIN_CLASIFICAR}»): {', '.join(sin)}. "
+                 "No se ha subido nada.")
     HECHAS.mkdir(parents=True, exist_ok=True)
     for pid, f in fichas.items():
         c = PENDIENTES / str(pid)
@@ -231,7 +250,8 @@ def subir(args):
             ficheros["recorte"] = ("recorte.png", (c / "recorte.png").read_bytes(), "image/png")
         datos = {k: f[k] for k in ("nombre", "categoria", "ficha") if k in f}
         r = enviar_formulario(f"/api/taller/prendas/{pid}", {"datos": json.dumps(datos)}, ficheros)
-        print(f"  #{pid} → armario: {r['nombre']}")
+        nota = f"  (respetado lo que corrigió la persona: {', '.join(r['corregido'])})" if r.get("corregido") else ""
+        print(f"  #{pid} → armario: {r['nombre']} [{r['categoria']}]{nota}")
         if c.exists():
             destino = HECHAS / str(pid)
             shutil.rmtree(destino, ignore_errors=True)
@@ -242,7 +262,8 @@ def subir(args):
 def armario(args):
     datos = pedir(f"/api/taller/prendas?usuario={args.usuario}")
     compacto = [{"id": p["id"], "categoria": p["categoria"], "capa": p["capa"],
-                 "nombre": p["nombre"], "estado": p["estado"], "ficha": p["ficha"]} for p in datos]
+                 "nombre": p["nombre"], "estado": p["estado"], "ficha": p["ficha"],
+                 "corregido": p.get("corregido", [])} for p in datos]
     texto = json.dumps(compacto, ensure_ascii=False, indent=1)
     if args.salida:
         Path(args.salida).write_text(texto)
@@ -260,6 +281,61 @@ def cargar(args):
     datos = json.loads(Path(args.fichero).read_text())
     r = enviar_json("/api/taller/conjuntos", datos)
     print(f"Cargados {r['cargados']} conjunto(s).")
+
+
+# ---------------------------------------------------------------- avisos
+def _corto(v):
+    if isinstance(v, list):
+        return ", ".join(map(str, v)) or "—"
+    return "—" if v in (None, "") else str(v)
+
+
+def avisos(args):
+    """Lo que las personas han pedido o corregido desde la app."""
+    d = pedir("/api/taller/avisos" + ("?todo=1" if args.todo else ""))
+    if args.json:
+        print(json.dumps(d, ensure_ascii=False, indent=1))
+        return
+    if not d["peticiones"] and not d["correcciones"]:
+        print("Sin avisos pendientes." if not args.todo else "No hay avisos.")
+        return
+    if d["peticiones"]:
+        print("PETICIONES")
+        for x in d["peticiones"]:
+            hecho = f"  ✓ atendida {x['atendida']}" if x["atendida"] else ""
+            print(f"  [{x['id']}] {x['persona']} (#{x['usuario_id']}) · {x['tipo']} · {x['creado']}{hecho}")
+            if x["comentario"]:
+                print(f"       «{x['comentario']}»")
+    if d["correcciones"]:
+        print("CORRECCIONES (la persona manda: el taller ya no pisa estos campos)")
+        for x in d["correcciones"]:
+            hecho = "  ✓" if x["atendida"] else ""
+            print(f"  [{x['id']}] {x['persona']} · prenda #{x['prenda_id']} «{x['prenda'] or x['categoria_actual']}» · "
+                  f"{x['campo']}: {_corto(x['antes'])} → {_corto(x['despues'])} · {x['creado']}{hecho}")
+    print("\nCuando estén resueltos: vidalwear atender --peticiones <ids> --correcciones <ids> [--nota \"…\"]")
+
+
+def _ids(texto):
+    if not texto:
+        return []
+    if texto == "todas":
+        return "todas"
+    return [int(x) for x in texto.split(",") if x.strip()]
+
+
+def atender(args):
+    pet, cor = _ids(args.peticiones), _ids(args.correcciones)
+    if pet == "todas" or cor == "todas":
+        d = pedir("/api/taller/avisos")
+        if pet == "todas":
+            pet = [x["id"] for x in d["peticiones"]]
+        if cor == "todas":
+            cor = [x["id"] for x in d["correcciones"]]
+    if not pet and not cor:
+        sys.exit("Nada que marcar: --peticiones 1,2 y/o --correcciones 3,4 (o «todas»).")
+    r = enviar_json("/api/taller/avisos/atender",
+                    {"peticiones": pet, "correcciones": cor, "nota": args.nota or ""})
+    print(f"Atendidas: {r['peticiones']} petición(es), {r['correcciones']} corrección(es).")
 
 
 # ------------------------------------------------------------ inventario
@@ -354,6 +430,15 @@ def principal():
     r = s.add_parser("cargar")
     r.add_argument("fichero")
     r.set_defaults(f=cargar)
+    r = s.add_parser("avisos", help="peticiones y correcciones de las personas (lo primero al mirar VidalWear)")
+    r.add_argument("--todo", action="store_true", help="también lo ya atendido")
+    r.add_argument("--json", action="store_true")
+    r.set_defaults(f=avisos)
+    r = s.add_parser("atender", help="marcar peticiones/correcciones como atendidas")
+    r.add_argument("--peticiones", help="ids separados por comas, o «todas»")
+    r.add_argument("--correcciones", help="ids separados por comas, o «todas»")
+    r.add_argument("--nota", help="lo que verá la persona en la app (p. ej. «12 conjuntos nuevos»)")
+    r.set_defaults(f=atender)
     s.add_parser("personas").set_defaults(
         f=lambda _: print(json.dumps(list(usuarios().values()), ensure_ascii=False, indent=1)))
     args = p.parse_args()

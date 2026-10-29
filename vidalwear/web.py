@@ -132,8 +132,9 @@ def borrar_perfil():
 @web.route("/bienvenida")
 @con_usuario
 def bienvenida():
-    pasos = catalogo.categorias_de(g.usuario["genero"])
-    return render_template("bienvenida.html", pasos=pasos, seccion="anadir")
+    # Se ve una vez, al crear el perfil; desde aquí se va a subir la ropa de golpe.
+    bd.actualizar_usuario(g.usuario["id"], bienvenida_hecha=1)
+    return render_template("bienvenida.html", seccion="anadir")
 
 
 @web.route("/bienvenida/fin")
@@ -148,34 +149,34 @@ def bienvenida_fin():
 @web.route("/anadir")
 @con_usuario
 def anadir():
-    return render_template("anadir.html", seccion="anadir",
-                           categorias=catalogo.categorias_de(g.usuario["genero"]))
+    """Una sola pantalla: se eligen todas las fotos de golpe y van a la bandeja
+    sin clasificar. Qué es cada prenda lo decide la estilista en el taller; si
+    se equivoca, la persona lo corrige en la ficha."""
+    gente = bd.usuarios()
+    para = request.args.get("para", type=int)
+    if not any(u["id"] == para for u in gente):
+        para = g.usuario["id"]
+    return render_template("subir.html", seccion="anadir", gente=gente, para=para,
+                           n_bandeja=bd.contar_bandeja(g.usuario["id"]))
 
 
 @web.route("/anadir/<clave>")
 @con_usuario
 def subir(clave):
-    if clave not in catalogo.CATEGORIAS:
-        abort(404)
-    guiado = request.args.get("guiado") == "1"
-    pasos = catalogo.categorias_de(g.usuario["genero"])
-    claves = [p["clave"] for p in pasos]
-    paso = claves.index(clave) + 1 if clave in claves else None
-    siguiente = None
-    if guiado and paso is not None:
-        siguiente = pasos[paso] if paso < len(pasos) else None
-    ya = [p for p in bd.prendas(g.usuario["id"]) if p["categoria"] == clave]
-    return render_template("subir.html", seccion="anadir", c=catalogo.categoria(clave),
-                           guiado=guiado, paso=paso, total=len(pasos),
-                           siguiente=siguiente, ya=ya)
+    # La antigua guía por categorías: los enlaces viejos llevan a la pantalla única.
+    return redirect(url_for("web.anadir"))
 
 
 @web.post("/api/prendas")
 @con_usuario
 def api_subir():
-    clave = request.form.get("categoria", "otros")
+    clave = request.form.get("categoria") or catalogo.SIN_CLASIFICAR
     if clave not in catalogo.CATEGORIAS:
-        clave = "otros"
+        clave = catalogo.SIN_CLASIFICAR
+    # La ropa puede ser de otra persona de casa (p. ej. Adrian sube la de Irene).
+    dueno = request.form.get("usuario", type=int)
+    if dueno is None or bd.usuario(dueno) is None:
+        dueno = g.usuario["id"]
     nombre = (request.form.get("nombre") or "").strip()[:80]
     foto = request.files.get("foto")
     if foto is None:
@@ -184,7 +185,7 @@ def api_subir():
         base = imagenes.guardar_original(ajustes().fotos, foto.stream)
     except imagenes.FotoNoValida as e:
         return jsonify(error=str(e)), 415
-    pid = bd.crear_prenda(g.usuario["id"], clave, nombre, base)
+    pid = bd.crear_prenda(dueno, clave, nombre, base)
     return jsonify(id=pid, mini=url_for("web.foto", pid=pid, tipo="mini"))
 
 
@@ -215,22 +216,61 @@ def armario():
                            n_bandeja=sum(1 for p in todas if p["estado"] == "bandeja"))
 
 
+def _leer_correccion(p, form):
+    """Lo que ha cambiado en el formulario de la ficha: {campo: (antes, después)}."""
+    ficha = p["ficha"] or {}
+    nuevo = {}
+    nombre = (form.get("nombre") or "").strip()[:80]
+    nuevo["nombre"] = (p["nombre"], nombre)
+    clave = form.get("categoria")
+    if clave in catalogo.CATEGORIAS:
+        nuevo["categoria"] = (p["categoria"], clave)
+    for k in ("color", "material", "patron"):
+        if k in form:
+            nuevo[k] = (ficha.get(k) or "", (form.get(k) or "").strip()[:60])
+    if "formalidad" in form:
+        f = form.get("formalidad", type=int)
+        nuevo["formalidad"] = (ficha.get("formalidad"), f if f in catalogo.FORMALIDAD else None)
+    if form.get("hay_temporadas"):
+        validas = [k for k, _ in catalogo.FILTROS["temporada"][1]]
+        elegidas = [t for t in validas if t in form.getlist("temporadas")]
+        nuevo["temporadas"] = (list(ficha.get("temporadas") or []), elegidas)
+    return {k: v for k, v in nuevo.items() if (v[0] or None) != (v[1] or None)}
+
+
 @web.route("/prenda/<int:pid>", methods=["GET", "POST"])
 @con_usuario
 def prenda(pid):
     p = prenda_mia(pid)
     if request.method == "POST":
-        clave = request.form.get("categoria")
-        cambios = {"nombre": (request.form.get("nombre") or "").strip()[:80]}
-        if clave in catalogo.CATEGORIAS:
-            cambios["categoria"] = clave
-        bd.actualizar_prenda(pid, **cambios)
-        flash("Guardado.", "ok")
+        cambios = _leer_correccion(p, request.form)
+        if cambios:
+            ficha = dict(p["ficha"] or {})
+            directos = {}
+            for campo, (antes, despues) in cambios.items():
+                bd.corregir(pid, g.usuario["id"], campo, antes, despues)
+                if campo in ("nombre", "categoria"):
+                    directos[campo] = despues
+                elif despues in (None, "", []):
+                    ficha.pop(campo, None)
+                else:
+                    ficha[campo] = despues
+                    # «colores» es la lista que usa la estilista: si solo había
+                    # uno, se pone al día con el color corregido.
+                    if campo == "color" and len(ficha.get("colores") or []) <= 1:
+                        ficha["colores"] = [despues]
+            bd.actualizar_prenda(pid, ficha=ficha, **directos)
+            flash("Corregido. La estilista lo verá y lo tendrá en cuenta.", "ok")
+        else:
+            flash("No había nada que cambiar.", "ok")
         return redirect(url_for("web.prenda", pid=pid))
     va_con = bd.conjuntos_con_prenda(pid)
+    categorias = catalogo.categorias_de(g.usuario["genero"])
+    if p["categoria"] not in [c["clave"] for c in categorias]:
+        categorias = [catalogo.categoria(p["categoria"])] + categorias
     return render_template("prenda.html", seccion="armario", p=p, va_con=va_con,
-                           n_conjuntos=len(va_con),
-                           categorias=catalogo.categorias_de(g.usuario["genero"]))
+                           n_conjuntos=len(va_con), corregidos=bd.campos_corregidos(pid),
+                           categorias=categorias)
 
 
 @web.post("/prenda/<int:pid>/borrar")
@@ -286,7 +326,23 @@ def conjuntos():
     return render_template("conjuntos.html", seccion="conjuntos", elegidos=elegidos,
                            exactos=exactos, parecidos=parecidos[:6],
                            descartados=descartados, hay_alguno=bool(todos),
+                           peticion=bd.peticion_pendiente(g.usuario["id"]),
+                           atendida=bd.ultima_atendida(g.usuario["id"]),
                            n_armario=len(bd.prendas(g.usuario["id"], "armario")))
+
+
+@web.post("/conjuntos/rehacer")
+@con_usuario
+def rehacer_conjuntos():
+    """«Rehacer conjuntos»: queda pendiente hasta que la estilista la atiende
+    desde el taller. Pedirlo otra vez solo cambia el comentario."""
+    if request.form.get("anular"):
+        bd.anular_peticion(g.usuario["id"])
+        flash("Petición anulada.", "ok")
+    else:
+        bd.pedir(g.usuario["id"], (request.form.get("comentario") or "").strip()[:500])
+        flash("Pedido. La estilista rehará tus conjuntos en su próxima pasada.", "ok")
+    return redirect(request.referrer or url_for("web.conjuntos"))
 
 
 @web.route("/conjunto/<int:cid>")

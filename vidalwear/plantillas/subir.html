@@ -1,71 +1,51 @@
 {% extends "base.html" %}
-{% block titulo %}{{ c.nombre }} · {{ app }}{% endblock %}
+{% block titulo %}Añadir · {{ app }}{% endblock %}
 {% block contenido %}
-{% if guiado and siguiente %}
-  {% set destino = url_for('web.subir', clave=siguiente.clave, guiado=1) %}
-{% elif guiado %}
-  {% set destino = url_for('web.bienvenida_fin') %}
-{% else %}
-  {% set destino = url_for('web.armario', c=c.clave) %}
-{% endif %}
+<div class="subida" id="subida" data-usuario="{{ para }}">
+  <p class="antetitulo">Añadir</p>
+  <h1 class="titular">Sube tu ropa</h1>
+  <p class="explica">Elige todas las fotos de golpe: una prenda por foto. Qué es cada una, el
+    color y la temporada lo decide la estilista; si algo sale mal, lo corriges en su ficha.</p>
 
-<div class="subida" id="subida" data-categoria="{{ c.clave }}" data-otros="{{ 1 if c.clave == 'otros' else 0 }}">
-  {% if guiado and paso %}
-  <div class="paso">
-    <span>Paso {{ paso }} de {{ total }}</span>
-    <div class="progreso"><i style="transform: scaleX({{ '%.3f'|format(paso / total) }})"></i></div>
-  </div>
-  {% endif %}
-
-  <p class="antetitulo">{{ c.nombre }}</p>
-  <h1 class="titular">{% if c.clave == 'otros' %}¿Algo más?{% else %}Fotografiemos {{ c.tus }}{% endif %}</h1>
-  <p class="explica">{{ c.consejo }}</p>
-
-  {% if c.clave == 'otros' %}
-  <label>¿Qué vas a subir?
-    <input type="text" id="nombre-otros" maxlength="80" placeholder="Por ejemplo: tirantes, bañador, guantes…" autocapitalize="sentences">
-  </label>
+  {% if gente|length > 1 %}
+  <fieldset class="para-quien">
+    <legend class="etiqueta">¿De quién es la ropa?</legend>
+    <div class="filtros desliza" role="radiogroup">
+      {% for u in gente %}
+      <label class="chip-radio">
+        <input type="radio" name="para" value="{{ u.id }}" {{ 'checked' if u.id == para }}>
+        <span>{{ u.nombre }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
   {% endif %}
 
   <div class="disparadores">
     <label class="boton principal disparo">
-      <input type="file" accept="image/*" capture="environment" id="camara">
-      Hacer foto
+      <input type="file" accept="image/*" multiple id="galeria">
+      Elegir fotos
     </label>
     <label class="boton disparo">
-      <input type="file" accept="image/*" multiple id="galeria">
-      Varias de la galería
+      <input type="file" accept="image/*" capture="environment" id="camara">
+      Hacer foto
     </label>
   </div>
 
   <ul class="tanda" id="tanda" aria-live="polite"></ul>
-  <p class="explica vacio-tanda" id="vacio-tanda">
-    {% if ya %}Ya tienes {{ ya|length }} aquí. Las nuevas aparecerán abajo según las hagas.{% else %}Las fotos aparecerán aquí según las hagas. Puedes hacer todas las que quieras seguidas, o elegir muchas de la galería de golpe.{% endif %}
-  </p>
-
-  {% if ya %}
-  <details class="ya">
-    <summary>Las que ya tienes ({{ ya|length }})</summary>
-    <ul class="rejilla mini">
-      {% for p in ya %}
-      <li class="tarjeta"><a href="{{ url_for('web.prenda', pid=p.id) }}">
-        <img src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="" loading="lazy" class="aparece {{ 'recorte' if p.recorte }}">
-        <span class="meta">{{ p.nombre or c.nombre }}</span></a></li>
-      {% endfor %}
+  <div class="vacio-tanda" id="vacio-tanda">
+    <ul class="consejos-cortos">
+      <li>Una prenda por foto</li>
+      <li>Fondo liso: la cama, el suelo o una puerta</li>
+      <li>Prenda clara, fondo oscuro</li>
+      <li>Luz de día, sin flash</li>
     </ul>
-  </details>
-  {% endif %}
+    {% if n_bandeja %}<p class="explica">Tienes {{ n_bandeja }} en la bandeja esperando a la estilista.</p>{% endif %}
+  </div>
 
   <div class="barra-pasos">
-    {% if guiado %}
-      <a class="boton suave" href="{{ url_for('web.bienvenida_fin') }}" data-esperar>Terminar aquí</a>
-      <a class="boton principal" id="seguir" href="{{ destino }}" data-esperar
-         data-con="{% if siguiente %}Siguiente: {{ siguiente.nombre }} →{% else %}Terminar ✓{% endif %}"
-         data-sin="{% if siguiente %}No tengo, siguiente →{% else %}Terminar ✓{% endif %}">
-        {% if siguiente %}No tengo, siguiente →{% else %}Terminar ✓{% endif %}</a>
-    {% else %}
-      <a class="boton principal" id="seguir" href="{{ destino }}" data-esperar data-con="Hecho ✓" data-sin="Volver">Volver</a>
-    {% endif %}
+    <a class="boton principal" id="seguir" href="{{ url_for('web.armario') }}" data-esperar
+       data-con="Hecho ✓" data-sin="Ver el armario">Ver el armario</a>
   </div>
 </div>
 {% endblock %}

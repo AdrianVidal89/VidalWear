@@ -57,7 +57,6 @@
     <a href="{{ url_for('web.armario') }}" class="{{ 'activo' if seccion == 'armario' }}">Armario</a>
     <a href="{{ url_for('web.anadir') }}" class="{{ 'activo' if seccion == 'anadir' }}">Añadir ropa</a>
     <a href="{{ url_for('web.conjuntos') }}" class="{{ 'activo' if seccion == 'conjuntos' }}">Conjuntos</a>
-    <a href="{{ url_for('web.bienvenida') }}">La guía paso a paso</a>
     <a href="{{ url_for('web.perfil') }}" class="{{ 'activo' if seccion == 'perfil' }}">{{ usuario.nombre }}</a>
     {% else %}
     <a href="{{ url_for('web.perfiles') }}">¿Quién eres?</a>
