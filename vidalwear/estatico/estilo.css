@@ -650,6 +650,26 @@ label input, label select, label textarea {
   .conjunto.destacada .conjunto-texto { padding: 0 var(--margen) 0 0; max-width: 520px; }
 }
 
+/* «Va con»: debajo de la ficha de una prenda, los conjuntos en los que sale,
+   en pequeño. Cada miniatura entera es un enlace al conjunto. La prenda que
+   se está mirando no se marca con nada: ya se ve que está en todos. */
+.va-con { margin-top: 40px; }
+.mini-conjuntos {
+  display: grid; gap: 26px var(--hueco); margin: 0 calc(-1 * var(--margen));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.mini-conjunto { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: var(--texto); min-width: 0; }
+.mini-conjunto .lienzo { padding: 7%; gap: 4px; }
+.mini-conjunto .pieza { pointer-events: none; }
+.mini-titulo {
+  padding: 0 8px; font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.mini-nota { padding: 0 8px; margin-top: -6px; font-size: .6rem; text-transform: uppercase; letter-spacing: .14em; color: var(--suave); }
+.mini-conjunto.descartado { opacity: .55; }
+.mini-conjunto .lienzo { transition: opacity var(--t-corto) var(--salida), transform var(--t-pulsar) var(--salida); }
+.mini-conjunto:active .lienzo { transform: scale(0.98); }
+
 /* ------------------------------------------------------------------- HOVER
    TODO el hover aquí dentro: en el móvil se quedaría pegado tras tocar. */
 @media (hover: hover) and (pointer: fine) {
@@ -663,6 +683,8 @@ label input, label select, label textarea {
   .tarjeta a:hover .lienzo-prenda.foto img { opacity: .82; }
   .tarjeta a:hover .lienzo-prenda img.otra[src] { opacity: 1; }
   .pieza:hover img { opacity: .75; }
+  .mini-conjunto:hover .lienzo { opacity: .8; }
+  .mini-conjunto:hover .mini-titulo { text-decoration: underline; text-underline-offset: 4px; }
   .perfil-boton:hover .avatar { opacity: .75; }
   .categorias a:hover i { transform: translateX(4px); color: var(--texto); }
   .opcion:hover span { border-color: var(--linea); }
@@ -682,7 +704,7 @@ label input, label select, label textarea {
   }
   ::view-transition-old(root), ::view-transition-new(root) { animation: 160ms linear both vw-fundido !important; }
   ::view-transition-old(root) { animation-direction: reverse !important; }
-  button:active, .boton:active, .opcion:active span { transform: none; }
+  button:active, .boton:active, .opcion:active span, .mini-conjunto:active .lienzo { transform: none; }
   .menu-completo, .menu-completo[open] nav a { transform: none !important; }
 }
 @keyframes vw-fundido { from { opacity: 0; } }
@@ -728,6 +750,7 @@ label input, label select, label textarea {
   .vacio-tanda { padding: 6px 0 10px; }
   .grupo-filtro { grid-template-columns: 1fr; gap: 0; padding-top: 10px; }
   .conjuntos { grid-template-columns: 1fr; }
+  .mini-conjuntos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 4px; }
   .perfiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 380px) {

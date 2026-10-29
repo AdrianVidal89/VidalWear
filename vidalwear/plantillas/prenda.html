@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block titulo %}{{ p.nombre or cat(p.categoria).nombre }} · {{ app }}{% endblock %}
+{% from "_conjunto.html" import miniatura with context %}
 {% block contenido %}
 {% set f = p.ficha %}
 <p class="miga"><a href="{{ url_for('web.armario', c=p.categoria) }}">← {{ cat(p.categoria).nombre }}</a></p>
@@ -26,7 +27,7 @@
       {% if f.descripcion %}<dt>Nota</dt><dd>{{ f.descripcion }}</dd>{% endif %}
     </dl>
     {% endif %}
-    {% if n_conjuntos %}<p class="explica">Sale en {{ n_conjuntos }} conjunto{{ '' if n_conjuntos == 1 else 's' }}.</p>{% endif %}
+    {% if n_conjuntos %}<p class="explica"><a class="enlace" href="#va-con">Sale en {{ n_conjuntos }} conjunto{{ '' if n_conjuntos == 1 else 's' }}</a>.</p>{% endif %}
 
     <details class="desplegable editar">
       <summary>Cambiar nombre o categoría</summary>
@@ -47,4 +48,15 @@
     </form>
   </div>
 </div>
+
+{% if p.estado != 'bandeja' %}
+<section class="va-con" id="va-con" aria-labelledby="va-con-titulo">
+  <h2 class="rotulo" id="va-con-titulo">Va con{% if n_conjuntos %} <span class="cuenta">{{ n_conjuntos }}</span>{% endif %}</h2>
+  {% if va_con %}
+  <div class="mini-conjuntos">{% for c in va_con %}{{ miniatura(c, p.id) }}{% endfor %}</div>
+  {% else %}
+  <p class="explica">Aún no sale en ningún conjunto. El estilista la combinará en su próxima pasada.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

@@ -227,9 +227,9 @@ def prenda(pid):
         bd.actualizar_prenda(pid, **cambios)
         flash("Guardado.", "ok")
         return redirect(url_for("web.prenda", pid=pid))
-    n_conjuntos = sum(1 for c in bd.conjuntos(g.usuario["id"])
-                      if any(x["id"] == pid for x in c["prendas"]))
-    return render_template("prenda.html", seccion="armario", p=p, n_conjuntos=n_conjuntos,
+    va_con = bd.conjuntos_con_prenda(pid)
+    return render_template("prenda.html", seccion="armario", p=p, va_con=va_con,
+                           n_conjuntos=len(va_con),
                            categorias=catalogo.categorias_de(g.usuario["genero"]))
 
 
@@ -287,6 +287,19 @@ def conjuntos():
                            exactos=exactos, parecidos=parecidos[:6],
                            descartados=descartados, hay_alguno=bool(todos),
                            n_armario=len(bd.prendas(g.usuario["id"], "armario")))
+
+
+@web.route("/conjunto/<int:cid>")
+@con_usuario
+def conjunto(cid):
+    """Un conjunto suelto, a toda pantalla. Se llega desde «Va con» en la ficha
+    de una prenda; «de» es la prenda desde la que se vino, para poder volver."""
+    c = bd.conjunto(cid)
+    if c is None or c["usuario_id"] != g.usuario["id"]:
+        abort(404)
+    desde = request.args.get("de", type=int)
+    origen = next((p for p in c["prendas"] if p["id"] == desde), None)
+    return render_template("conjunto.html", seccion="conjuntos", c=c, origen=origen)
 
 
 @web.post("/api/conjuntos/<int:cid>/valorar")

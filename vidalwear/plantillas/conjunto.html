@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_conjunto.html" import tarjeta, guion_valorar with context %}
+{% block titulo %}{{ c.titulo }} · {{ app }}{% endblock %}
+{% block contenido %}
+<p class="miga">
+  {% if origen %}<a href="{{ url_for('web.prenda', pid=origen.id) }}">← {{ origen.nombre or cat(origen.categoria).nombre }}</a>
+  {% else %}<a href="{{ url_for('web.conjuntos') }}">← Conjuntos</a>{% endif %}
+</p>
+{{ tarjeta(c, True, 'Conjunto') }}
+{% endblock %}
+{% block guion %}{{ guion_valorar() }}{% endblock %}

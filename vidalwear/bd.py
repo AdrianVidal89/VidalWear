@@ -213,6 +213,16 @@ def conjuntos(uid):
     return [_conjunto(f) for f in filas]
 
 
+def conjuntos_con_prenda(pid):
+    """Los conjuntos en los que sale una prenda: primero los que gustan y los
+    que mejor ve el estilista; los descartados («no me lo pondría»), al final."""
+    filas = bd().execute(
+        "SELECT c.* FROM conjuntos c JOIN conjunto_prendas cp ON cp.conjunto_id = c.id "
+        "WHERE cp.prenda_id = ? ORDER BY (c.valoracion < 0), c.valoracion DESC, "
+        "c.puntuacion DESC, c.id DESC", (pid,))
+    return [_conjunto(f) for f in filas]
+
+
 def conjunto(cid):
     f = bd().execute("SELECT * FROM conjuntos WHERE id = ?", (cid,)).fetchone()
     return _conjunto(f) if f else None

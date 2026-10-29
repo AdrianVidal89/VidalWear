@@ -1,34 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}Conjuntos · {{ app }}{% endblock %}
 
-{% macro tarjeta(c, mejor=False) %}
-<article class="conjunto {{ 'destacada' if mejor }}" data-id="{{ c.id }}">
-  <div class="lienzo">
-    {% for p in c.prendas %}
-    <a href="{{ url_for('web.prenda', pid=p.id) }}" class="pieza capa-{{ cat(p.categoria).capa }}" title="{{ p.nombre }}">
-      <img class="aparece" src="{{ url_for('web.foto', pid=p.id, tipo='vista-mini', v=p.procesado or p.creado) }}" alt="{{ p.nombre }}" loading="lazy">
-    </a>
-    {% endfor %}
-  </div>
-  <div class="conjunto-texto">
-  {% if mejor %}<p class="antetitulo">La mejor para esto</p>{% endif %}
-  <h2>{{ c.titulo }}</h2>
-  <ul class="piezas-lista">
-    {% for p in c.prendas %}<li>{{ p.nombre or cat(p.categoria).nombre }}</li>{% endfor %}
-  </ul>
-  {% if c.explicacion %}<p class="explica">{{ c.explicacion }}</p>{% endif %}
-  <div class="etiquetas">
-    {% for o in c.ocasiones %}<span class="chip">{{ catalogo.etiqueta_filtro('ocasion', o) }}</span>{% endfor %}
-    {% for m in c.momentos %}<span class="chip">{{ catalogo.etiqueta_filtro('momento', m) }}</span>{% endfor %}
-    {% for t in c.temporadas %}<span class="chip">{{ catalogo.etiqueta_filtro('temporada', t) }}</span>{% endfor %}
-  </div>
-  <div class="valorar" role="group" aria-label="¿Te gusta?">
-    <button type="button" class="pequeno {{ 'activo' if c.valoracion == 1 }}" data-valor="1" aria-pressed="{{ 'true' if c.valoracion == 1 else 'false' }}">Me gusta</button>
-    <button type="button" class="pequeno {{ 'activo' if c.valoracion == -1 }}" data-valor="-1" aria-pressed="{{ 'true' if c.valoracion == -1 else 'false' }}">No me lo pondría</button>
-  </div>
-  </div>
-</article>
-{% endmacro %}
+{% from "_conjunto.html" import tarjeta, guion_valorar with context %}
 
 {% block contenido %}
 <div class="portada">
@@ -80,24 +53,4 @@
 {% endif %}
 {% endblock %}
 
-{% block guion %}
-<script>
-  // «Me gusta» / «No me lo pondría». Volver a pulsar lo quita. El estilista lo
-  // lee en el siguiente paso por el taller para afinar los conjuntos nuevos.
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('.valorar button');
-    if (!b) return;
-    var tarjeta = b.closest('.conjunto');
-    var valor = b.classList.contains('activo') ? 0 : parseInt(b.dataset.valor, 10);
-    tarjeta.querySelectorAll('.valorar button').forEach(function (x) {
-      var on = parseInt(x.dataset.valor, 10) === valor;
-      x.classList.toggle('activo', on);
-      x.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-    fetch('/api/conjuntos/' + tarjeta.dataset.id + '/valorar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ valor: valor })
-    });
-  });
-</script>
-{% endblock %}
+{% block guion %}{{ guion_valorar() }}{% endblock %}
